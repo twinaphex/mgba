@@ -341,7 +341,14 @@ void retro_reset(void) {
 }
 
 bool retro_load_game(const struct retro_game_info* game) {
+  struct retro_memory_descriptor descs[10];
+  struct retro_memory_map mmaps;
+  struct retro_memory_descriptor *d;
+  size_t savedata_size;
+  struct GBA *g = context.gba;
+  bool yes = true;
 	struct VFile* rom;
+  
 	if (game->data) {
 		data = anonymousMemoryMap(game->size);
 		dataSize = game->size;
@@ -366,6 +373,47 @@ bool retro_load_game(const struct retro_game_info* game) {
 	_reloadSettings();
 	GBAContextLoadROMFromVFile(&context, rom, save);
 	GBAContextStart(&context);
+  
+  memset(descs, 0, sizeof(descs));
+  d = descs;
+  
+  /* Map working RAM */
+  d->ptr = g->memory.wram;   d->start = BASE_WORKING_RAM;  d->len = SIZE_WORKING_RAM;  d++;
+  /* Map internal working RAM */
+  d->ptr = g->memory.iwram;  d->start = BASE_WORKING_IRAM; d->len = SIZE_WORKING_IRAM; d++;
+  /* Map VRAM */
+  d->ptr = g->video.vram;    d->start = BASE_VRAM;         d->len = SIZE_VRAM;         d++;
+  /* Map palette RAM */
+  d->ptr = g->video.palette; d->start = BASE_PALETTE_RAM;  d->len = SIZE_PALETTE_RAM;  d++;
+  /* Map OAM */
+  d->ptr = &g->video.oam;    d->start = BASE_OAM;          d->len = SIZE_OAM;          d++;
+  
+  /* Map ROM */
+  d->ptr = g->memory.rom;    d->start = BASE_CART0;        d->len = SIZE_CART0;
+  d->flags = RETRO_MEMDESC_CONST; d++;
+  d->ptr = g->memory.rom;    d->start = BASE_CART1;        d->len = SIZE_CART1;
+  d->flags = RETRO_MEMDESC_CONST; d->offset = SIZE_CART0; d++;
+  d->ptr = g->memory.rom;    d->start = BASE_CART2;        d->len = SIZE_CART2;
+  d->flags = RETRO_MEMDESC_CONST; d->offset = SIZE_CART0 + SIZE_CART1; d++;
+  
+  /* Map BIOS */
+  d->ptr = g->memory.rom;    d->start = BASE_BIOS;         d->len = SIZE_BIOS;
+  d->flags = RETRO_MEMDESC_CONST; d++;
+  
+  /* Map save RAM */
+  savedata_size = retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+  
+  if (savedata_size != 0)
+  {
+    d->ptr = savedata; d->start = BASE_CART_SRAM; d->len = savedata_size; d++;
+  }
+  
+  mmaps.descriptors = descs;
+  mmaps.num_descriptors = d - descs;
+
+  environCallback(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &mmaps);
+  environCallback(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &yes);
+  
 	return true;
 }
 
