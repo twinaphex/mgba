@@ -341,11 +341,10 @@ void retro_reset(void) {
 }
 
 bool retro_load_game(const struct retro_game_info* game) {
-  struct retro_memory_descriptor descs[10];
+  struct retro_memory_descriptor descs[11];
   struct retro_memory_map mmaps;
-  struct retro_memory_descriptor *d;
   size_t savedata_size;
-  struct GBA *g = context.gba;
+  struct GBA *gba = context.gba;
   bool yes = true;
 	struct VFile* rom;
   
@@ -375,41 +374,80 @@ bool retro_load_game(const struct retro_game_info* game) {
 	GBAContextStart(&context);
   
   memset(descs, 0, sizeof(descs));
-  d = descs;
-  
-  /* Map working RAM */
-  d->ptr = g->memory.wram;   d->start = BASE_WORKING_RAM;  d->len = SIZE_WORKING_RAM;  d++;
-  /* Map internal working RAM */
-  d->ptr = g->memory.iwram;  d->start = BASE_WORKING_IRAM; d->len = SIZE_WORKING_IRAM; d++;
-  /* Map VRAM */
-  d->ptr = g->video.vram;    d->start = BASE_VRAM;         d->len = SIZE_VRAM;         d++;
-  /* Map palette RAM */
-  d->ptr = g->video.palette; d->start = BASE_PALETTE_RAM;  d->len = SIZE_PALETTE_RAM;  d++;
-  /* Map OAM */
-  d->ptr = &g->video.oam;    d->start = BASE_OAM;          d->len = SIZE_OAM;          d++;
-  
-  /* Map ROM */
-  d->ptr = g->memory.rom;    d->start = BASE_CART0;        d->len = SIZE_CART0;
-  d->flags = RETRO_MEMDESC_CONST; d++;
-  d->ptr = g->memory.rom;    d->start = BASE_CART1;        d->len = SIZE_CART1;
-  d->flags = RETRO_MEMDESC_CONST; d->offset = SIZE_CART0; d++;
-  d->ptr = g->memory.rom;    d->start = BASE_CART2;        d->len = SIZE_CART2;
-  d->flags = RETRO_MEMDESC_CONST; d->offset = SIZE_CART0 + SIZE_CART1; d++;
-  
-  /* Map BIOS */
-  d->ptr = g->memory.rom;    d->start = BASE_BIOS;         d->len = SIZE_BIOS;
-  d->flags = RETRO_MEMDESC_CONST; d++;
-  
-  /* Map save RAM */
   savedata_size = retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
   
-  if (savedata_size != 0)
-  {
-    d->ptr = savedata; d->start = BASE_CART_SRAM; d->len = savedata_size; d++;
-  }
+  /* Map internal working RAM */
+  descs[0].ptr    =  gba->memory.iwram;
+  descs[0].start  =  BASE_WORKING_IRAM;
+  descs[0].len    =  SIZE_WORKING_IRAM;
+  descs[0].select = 0xFF000000; /* From vbam-libretro */
+  
+  /* Map working RAM */
+  descs[1].ptr    = gba->memory.wram;
+  descs[1].start  = BASE_WORKING_RAM;
+  descs[1].len    = SIZE_WORKING_RAM;
+  descs[1].select = 0xFF000000;
+  
+  /* Map save RAM */
+  descs[2].ptr    = savedata_size ? savedata : NULL;
+  descs[2].start  = BASE_CART_SRAM;
+  descs[2].len    = savedata_size;
+  descs[2].select = 0xFF000000;
+  
+  /* Map ROM */
+  descs[3].ptr    = gba->memory.rom;
+  descs[3].start  = BASE_CART0;
+  descs[3].len    = SIZE_CART0;
+  descs[3].select = 0xFF000000;
+  descs[3].flags  = RETRO_MEMDESC_CONST;
+  
+  descs[4].ptr    = gba->memory.rom;
+  descs[4].start  = BASE_CART1;
+  descs[4].len    = SIZE_CART1;
+  descs[4].select = 0xFF000000;
+  descs[4].offset = SIZE_CART0;
+  descs[4].flags  = RETRO_MEMDESC_CONST;
+  
+  descs[5].ptr    = gba->memory.rom;
+  descs[5].start  = BASE_CART2;
+  descs[5].len    = SIZE_CART2;
+  descs[5].select = 0xFF000000;
+  descs[5].offset = SIZE_CART0 + SIZE_CART1;
+  descs[5].flags  = RETRO_MEMDESC_CONST;
+  
+  /* Map BIOS */
+  descs[6].ptr    = gba->memory.rom;
+  descs[6].start  = BASE_BIOS;
+  descs[6].len    = SIZE_BIOS;
+  descs[6].select = 0xFF000000;
+  descs[6].flags  = RETRO_MEMDESC_CONST;
+  
+  /* Map VRAM */
+  descs[7].ptr    = gba->video.vram;
+  descs[7].start  = BASE_VRAM;
+  descs[7].len    = SIZE_VRAM;
+  descs[7].select = 0xFF000000;
+  
+  /* Map palette RAM */
+  descs[8].ptr    = gba->video.palette;
+  descs[8].start  = BASE_PALETTE_RAM;
+  descs[8].len    = SIZE_PALETTE_RAM;
+  descs[8].select = 0xFF000000;
+  
+  /* Map OAM */
+  descs[9].ptr    = &gba->video.oam;
+  descs[9].start  = BASE_OAM;
+  descs[9].len    = SIZE_OAM;
+  descs[9].select = 0xFF000000;
+  
+  /* Map mmapped I/O */
+  descs[10].ptr    = gba->memory.io;
+  descs[10].start  = BASE_IO;
+  descs[10].len    = SIZE_IO;
+  descs[10].select = 0xFF000000;
   
   mmaps.descriptors = descs;
-  mmaps.num_descriptors = d - descs;
+  mmaps.num_descriptors = sizeof(descs) / sizeof(descs[0]);
 
   environCallback(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &mmaps);
   environCallback(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &yes);
