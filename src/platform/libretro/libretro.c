@@ -344,6 +344,7 @@ bool retro_load_game(const struct retro_game_info* game) {
 	struct retro_memory_descriptor descs[11];
 	struct retro_memory_map mmaps;
 	size_t savedata_size;
+  size_t rom_size = game->size + (game->size & 1);
 	struct GBA *gba = context.gba;
 	bool yes = true;
 	struct VFile* rom;
@@ -380,7 +381,7 @@ bool retro_load_game(const struct retro_game_info* game) {
 	descs[0].ptr    =  gba->memory.iwram;
 	descs[0].start  =  BASE_WORKING_IRAM;
 	descs[0].len    =  SIZE_WORKING_IRAM;
-	descs[0].select = 0xFF000000; /* From vbam-libretro */
+	descs[0].select = 0xFF000000;
 	
 	/* Map working RAM */
 	descs[1].ptr    = gba->memory.wram;
@@ -389,37 +390,31 @@ bool retro_load_game(const struct retro_game_info* game) {
 	descs[1].select = 0xFF000000;
 	
 	/* Map save RAM */
+  /* TODO: if SRAM is flash, use start=0 addrspace="S" instead */
 	descs[2].ptr    = savedata_size ? savedata : NULL;
 	descs[2].start  = BASE_CART_SRAM;
 	descs[2].len    = savedata_size;
-	descs[2].select = 0xFF000000;
 	
 	/* Map ROM */
 	descs[3].ptr    = gba->memory.rom;
 	descs[3].start  = BASE_CART0;
-	descs[3].len    = SIZE_CART0;
-	descs[3].select = 0xFF000000;
+	descs[3].len    = rom_size;
 	descs[3].flags  = RETRO_MEMDESC_CONST;
 	
 	descs[4].ptr    = gba->memory.rom;
 	descs[4].start  = BASE_CART1;
-	descs[4].len    = SIZE_CART1;
-	descs[4].select = 0xFF000000;
-	descs[4].offset = SIZE_CART0;
+	descs[4].len    = rom_size;
 	descs[4].flags  = RETRO_MEMDESC_CONST;
 	
 	descs[5].ptr    = gba->memory.rom;
 	descs[5].start  = BASE_CART2;
-	descs[5].len    = SIZE_CART2;
-	descs[5].select = 0xFF000000;
-	descs[5].offset = SIZE_CART0 + SIZE_CART1;
+	descs[5].len    = rom_size;
 	descs[5].flags  = RETRO_MEMDESC_CONST;
 	
 	/* Map BIOS */
-	descs[6].ptr    = gba->memory.rom;
+	descs[6].ptr    = gba->memory.bios;
 	descs[6].start  = BASE_BIOS;
 	descs[6].len    = SIZE_BIOS;
-	descs[6].select = 0xFF000000;
 	descs[6].flags  = RETRO_MEMDESC_CONST;
 	
 	/* Map VRAM */
@@ -444,7 +439,6 @@ bool retro_load_game(const struct retro_game_info* game) {
 	descs[10].ptr    = gba->memory.io;
 	descs[10].start  = BASE_IO;
 	descs[10].len    = SIZE_IO;
-	descs[10].select = 0xFF000000;
 	
 	mmaps.descriptors = descs;
 	mmaps.num_descriptors = sizeof(descs) / sizeof(descs[0]);
