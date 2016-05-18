@@ -6,7 +6,7 @@
 #include "psp2-context.h"
 
 #include "gba/gba.h"
-#include "gba/gui/gui-runner.h"
+#include "feature/gui/gui-runner.h"
 #include "util/gui.h"
 #include "util/gui/font.h"
 #include "util/gui/file-select.h"
@@ -45,7 +45,7 @@ static uint32_t _pollInput(void) {
 		input |= 1 << GUI_INPUT_CANCEL;
 	}
 	if (pad.buttons & SCE_CTRL_SQUARE) {
-		input |= 1 << GBA_GUI_INPUT_SCREEN_MODE;
+		input |= 1 << mGUI_INPUT_SCREEN_MODE;
 	}
 	if (pad.buttons & SCE_CTRL_CIRCLE) {
 		input |= 1 << GUI_INPUT_BACK;
@@ -95,7 +95,7 @@ static int _batteryState(void) {
 int main() {
 	vita2d_init();
 	struct GUIFont* font = GUIFontCreate();
-	struct GBAGUIRunner runner = {
+	struct mGUIRunner runner = {
 		.params = {
 			PSP2_HORIZONTAL_PIXELS, PSP2_VERTICAL_PIXELS,
 			font, "cache0:", _drawStart, _drawEnd,
@@ -146,22 +146,22 @@ int main() {
 			{ .id = 0 }
 		},
 		.nConfigExtra = 1,
-		.setup = GBAPSP2Setup,
-		.teardown = GBAPSP2Teardown,
-		.gameLoaded = GBAPSP2LoadROM,
-		.gameUnloaded = GBAPSP2UnloadROM,
-		.prepareForFrame = GBAPSP2PrepareForFrame,
-		.drawFrame = GBAPSP2Draw,
-		.drawScreenshot = GBAPSP2DrawScreenshot,
+		.setup = mPSP2Setup,
+		.teardown = mPSP2Teardown,
+		.gameLoaded = mPSP2LoadROM,
+		.gameUnloaded = mPSP2UnloadROM,
+		.prepareForFrame = mPSP2PrepareForFrame,
+		.drawFrame = mPSP2Draw,
+		.drawScreenshot = mPSP2DrawScreenshot,
 		.paused = 0,
 		.unpaused = 0,
-		.incrementScreenMode = GBAPSP2IncrementScreenMode,
-		.pollGameInput = GBAPSP2PollInput
+		.incrementScreenMode = mPSP2IncrementScreenMode,
+		.pollGameInput = mPSP2PollInput
 	};
 
-	GBAGUIInit(&runner, "psvita");
-	GBAGUIRunloop(&runner);
-	GBAGUIDeinit(&runner);
+	mGUIInit(&runner, "psvita");
+	mGUIRunloop(&runner);
+	mGUIDeinit(&runner);
 
 	GUIFontDestroy(font);
 	vita2d_fini();

@@ -5,13 +5,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "video.h"
 
-#include "gba/context/sync.h"
+#include "core/sync.h"
 #include "gba/gba.h"
 #include "gba/io.h"
 #include "gba/rr/rr.h"
 #include "gba/serialize.h"
 
 #include "util/memory.h"
+
+mLOG_DEFINE_CATEGORY(GBA_VIDEO, "GBA Video");
 
 static void GBAVideoDummyRendererInit(struct GBAVideoRenderer* renderer);
 static void GBAVideoDummyRendererReset(struct GBAVideoRenderer* renderer);
@@ -160,7 +162,7 @@ int32_t GBAVideoProcessEvents(struct GBAVideo* video, int32_t cycles) {
 				GBAFrameEnded(video->p);
 				--video->frameskipCounter;
 				if (video->frameskipCounter < 0) {
-					GBASyncPostFrame(video->p->sync);
+					mCoreSyncPostFrame(video->p->sync);
 					video->frameskipCounter = video->frameskip;
 				}
 				++video->frameCounter;
@@ -224,7 +226,38 @@ static void GBAVideoDummyRendererDeinit(struct GBAVideoRenderer* renderer) {
 
 static uint16_t GBAVideoDummyRendererWriteVideoRegister(struct GBAVideoRenderer* renderer, uint32_t address, uint16_t value) {
 	UNUSED(renderer);
-	UNUSED(address);
+	switch (address) {
+	case REG_BG0CNT:
+	case REG_BG1CNT:
+		value &= 0xDFFF;
+		break;
+	case REG_BG2CNT:
+	case REG_BG3CNT:
+		value &= 0xFFFF;
+		break;
+	case REG_BG0HOFS:
+	case REG_BG0VOFS:
+	case REG_BG1HOFS:
+	case REG_BG1VOFS:
+	case REG_BG2HOFS:
+	case REG_BG2VOFS:
+	case REG_BG3HOFS:
+	case REG_BG3VOFS:
+		value &= 0x01FF;
+		break;
+	case REG_BLDCNT:
+		value &= 0x3FFF;
+		break;
+	case REG_BLDALPHA:
+		value &= 0x1F1F;
+		break;
+	case REG_WININ:
+	case REG_WINOUT:
+		value &= 0x3F3F;
+		break;
+	default:
+		break;
+	}
 	return value;
 }
 

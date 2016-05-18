@@ -131,8 +131,10 @@ enum GBAIORegisters {
 	REG_SIODATA8 = 0x12A,
 	REG_RCNT = 0x134,
 	REG_JOYCNT = 0x140,
-	REG_JOY_RECV = 0x150,
-	REG_JOY_TRANS = 0x154,
+	REG_JOY_RECV_LO = 0x150,
+	REG_JOY_RECV_HI = 0x152,
+	REG_JOY_TRANS_LO = 0x154,
+	REG_JOY_TRANS_HI = 0x156,
 	REG_JOYSTAT = 0x158,
 
 	// Keypad
@@ -150,6 +152,8 @@ enum GBAIORegisters {
 	REG_POSTFLG = 0x300,
 	REG_HALTCNT = 0x301
 };
+
+mLOG_DECLARE_CATEGORY(GBA_IO);
 
 extern const char* GBAIORegisterNames[];
 
