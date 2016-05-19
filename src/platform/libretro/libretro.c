@@ -91,7 +91,7 @@ static void _reloadSettings(void) {
 }
 
 unsigned retro_api_version(void) {
-   return RETRO_API_VERSION;
+	 return RETRO_API_VERSION;
 }
 
 void retro_set_environment(retro_environment_t env) {
@@ -130,25 +130,25 @@ void retro_set_input_state(retro_input_state_t input) {
 }
 
 void retro_get_system_info(struct retro_system_info* info) {
-   info->need_fullpath = false;
-   info->valid_extensions = "gba";
+	 info->need_fullpath = false;
+	 info->valid_extensions = "gba";
 #ifdef GIT_VERSION
-   info->library_version = GIT_VERSION;
+	 info->library_version = GIT_VERSION;
 #else
-   info->library_version = "git";
+	 info->library_version = "git";
 #endif
-   info->library_name = "mGBA";
-   info->block_extract = false;
+	 info->library_name = "mGBA";
+	 info->block_extract = false;
 }
 
 void retro_get_system_av_info(struct retro_system_av_info* info) {
-   info->geometry.base_width = VIDEO_HORIZONTAL_PIXELS;
-   info->geometry.base_height = VIDEO_VERTICAL_PIXELS;
-   info->geometry.max_width = VIDEO_HORIZONTAL_PIXELS;
-   info->geometry.max_height = VIDEO_VERTICAL_PIXELS;
-   info->geometry.aspect_ratio = 3.0 / 2.0;
-   info->timing.fps =  GBA_ARM7TDMI_FREQUENCY / (float) VIDEO_TOTAL_LENGTH;
-   info->timing.sample_rate = 32768;
+	 info->geometry.base_width = VIDEO_HORIZONTAL_PIXELS;
+	 info->geometry.base_height = VIDEO_VERTICAL_PIXELS;
+	 info->geometry.max_width = VIDEO_HORIZONTAL_PIXELS;
+	 info->geometry.max_height = VIDEO_VERTICAL_PIXELS;
+	 info->geometry.aspect_ratio = 3.0 / 2.0;
+	 info->timing.fps =  GBA_ARM7TDMI_FREQUENCY / (float) VIDEO_TOTAL_LENGTH;
+	 info->timing.sample_rate = 32768;
 }
 
 void retro_init(void) {
@@ -229,7 +229,7 @@ void retro_init(void) {
 
 	GBAVideoSoftwareRendererCreate(&renderer);
 #ifdef _3DS
-   renderer.outputBuffer = linearMemAlign(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, 0x80);
+	 renderer.outputBuffer = linearMemAlign(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, 0x80);
 #else
 	renderer.outputBuffer = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 #endif
@@ -255,7 +255,7 @@ void retro_deinit(void) {
 	GBACheatDeviceDestroy(&cheats);
 	GBACheatSetDeinit(&cheatSet);
 #ifdef _3DS
-   linearFree(renderer.outputBuffer);
+	 linearFree(renderer.outputBuffer);
 #else
 	free(renderer.outputBuffer);
 #endif
@@ -341,7 +341,14 @@ void retro_reset(void) {
 }
 
 bool retro_load_game(const struct retro_game_info* game) {
+	struct retro_memory_descriptor descs[11];
+	struct retro_memory_map mmaps;
+	size_t savedata_size;
+  size_t rom_size = game->size + (game->size & 1);
+	struct GBA *gba = context.gba;
+	bool yes = true;
 	struct VFile* rom;
+	
 	if (game->data) {
 		data = anonymousMemoryMap(game->size);
 		dataSize = game->size;
@@ -366,6 +373,79 @@ bool retro_load_game(const struct retro_game_info* game) {
 	_reloadSettings();
 	GBAContextLoadROMFromVFile(&context, rom, save);
 	GBAContextStart(&context);
+	
+	memset(descs, 0, sizeof(descs));
+	savedata_size = retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+	
+	/* Map internal working RAM */
+	descs[0].ptr    =  gba->memory.iwram;
+	descs[0].start  =  BASE_WORKING_IRAM;
+	descs[0].len    =  SIZE_WORKING_IRAM;
+	descs[0].select = 0xFF000000;
+	
+	/* Map working RAM */
+	descs[1].ptr    = gba->memory.wram;
+	descs[1].start  = BASE_WORKING_RAM;
+	descs[1].len    = SIZE_WORKING_RAM;
+	descs[1].select = 0xFF000000;
+	
+	/* Map save RAM */
+  /* TODO: if SRAM is flash, use start=0 addrspace="S" instead */
+	descs[2].ptr    = savedata_size ? savedata : NULL;
+	descs[2].start  = BASE_CART_SRAM;
+	descs[2].len    = savedata_size;
+	
+	/* Map ROM */
+	descs[3].ptr    = gba->memory.rom;
+	descs[3].start  = BASE_CART0;
+	descs[3].len    = rom_size;
+	descs[3].flags  = RETRO_MEMDESC_CONST;
+	
+	descs[4].ptr    = gba->memory.rom;
+	descs[4].start  = BASE_CART1;
+	descs[4].len    = rom_size;
+	descs[4].flags  = RETRO_MEMDESC_CONST;
+	
+	descs[5].ptr    = gba->memory.rom;
+	descs[5].start  = BASE_CART2;
+	descs[5].len    = rom_size;
+	descs[5].flags  = RETRO_MEMDESC_CONST;
+	
+	/* Map BIOS */
+	descs[6].ptr    = gba->memory.bios;
+	descs[6].start  = BASE_BIOS;
+	descs[6].len    = SIZE_BIOS;
+	descs[6].flags  = RETRO_MEMDESC_CONST;
+	
+	/* Map VRAM */
+	descs[7].ptr    = gba->video.vram;
+	descs[7].start  = BASE_VRAM;
+	descs[7].len    = SIZE_VRAM;
+	descs[7].select = 0xFF000000;
+	
+	/* Map palette RAM */
+	descs[8].ptr    = gba->video.palette;
+	descs[8].start  = BASE_PALETTE_RAM;
+	descs[8].len    = SIZE_PALETTE_RAM;
+	descs[8].select = 0xFF000000;
+	
+	/* Map OAM */
+	descs[9].ptr    = &gba->video.oam; /* video.oam is a structure */
+	descs[9].start  = BASE_OAM;
+	descs[9].len    = SIZE_OAM;
+	descs[9].select = 0xFF000000;
+	
+	/* Map mmapped I/O */
+	descs[10].ptr    = gba->memory.io;
+	descs[10].start  = BASE_IO;
+	descs[10].len    = SIZE_IO;
+	
+	mmaps.descriptors = descs;
+	mmaps.num_descriptors = sizeof(descs) / sizeof(descs[0]);
+
+	environCallback(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &mmaps);
+	environCallback(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &yes);
+	
 	return true;
 }
 
