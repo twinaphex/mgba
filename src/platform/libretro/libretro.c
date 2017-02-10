@@ -51,12 +51,19 @@ static void _setRumble(struct mRumble* rumble, int enable);
 static uint8_t _readLux(struct GBALuminanceSource* lux);
 static void _updateLux(struct GBALuminanceSource* lux);
 
-static struct mCore* core;
+static struct mCore* core1;
+static struct mCore* core2;
+static struct mCore* core3;
 static void* outputBuffer;
+static void* outputBuffer1;
+static void* outputBuffer2;
+static void* outputBuffer3;
 static void* data;
 static size_t dataSize;
 static void* savedata;
 static struct mAVStream stream;
+static struct mAVStream stream2;
+static struct mAVStream stream3;
 static int rumbleLevel;
 static struct CircleBuffer rumbleHistory;
 static struct mRumble rumble;
@@ -88,16 +95,26 @@ static void _reloadSettings(void) {
 	var.value = 0;
 	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
 		if (strcmp(var.value, "Don't Remove") == 0) {
-			mCoreConfigSetDefaultValue(&core->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core1->config, "idleOptimization", "ignore");
+         mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
+         mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
 		} else if (strcmp(var.value, "Remove Known") == 0) {
-			mCoreConfigSetDefaultValue(&core->config, "idleOptimization", "remove");
+			mCoreConfigSetDefaultValue(&core1->config, "idleOptimization", "remove");
+         mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
+         mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
 		} else if (strcmp(var.value, "Detect and Remove") == 0) {
-			mCoreConfigSetDefaultValue(&core->config, "idleOptimization", "detect");
+			mCoreConfigSetDefaultValue(&core1->config, "idleOptimization", "detect");
+         mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
+         mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
 		}
 	}
 
-	mCoreConfigLoadDefaults(&core->config, &opts);
-	mCoreLoadConfig(core);
+	mCoreConfigLoadDefaults(&core1->config, &opts);
+	mCoreLoadConfig(core1);
+   mCoreConfigLoadDefaults(&core2->config, &opts);
+   mCoreLoadConfig(core2);
+   mCoreConfigLoadDefaults(&core3->config, &opts);
+   mCoreLoadConfig(core3);
 }
 
 unsigned retro_api_version(void) {
@@ -147,19 +164,23 @@ void retro_get_system_info(struct retro_system_info* info) {
 #else
 	info->library_version = "git";
 #endif
-	info->library_name = "mGBA";
+	info->library_name = "mGBAD";
 	info->block_extract = false;
 }
 
 void retro_get_system_av_info(struct retro_system_av_info* info) {
 	unsigned width, height;
-	core->desiredVideoDimensions(core, &width, &height);
+	core1->desiredVideoDimensions(core1, &width, &height);
+   core2->desiredVideoDimensions(core2, &width, &height);
+   core3->desiredVideoDimensions(core3, &width, &height);
 	info->geometry.base_width = width;
-	info->geometry.base_height = height;
+	info->geometry.base_height = height * 3;
 	info->geometry.max_width = width;
-	info->geometry.max_height = height;
-	info->geometry.aspect_ratio = width / (double) height;
-	info->timing.fps = core->frequency(core) / (float) core->frameCycles(core);
+	info->geometry.max_height = height * 3;
+	info->geometry.aspect_ratio = width / (double) (height * 3);
+	info->timing.fps = core1->frequency(core1) / (float) core1->frameCycles(core1);
+   info->timing.fps = core2->frequency(core2) / (float) core2->frameCycles(core2);
+   info->timing.fps = core3->frequency(core3) / (float) core3->frameCycles(core3);
 	info->timing.sample_rate = 32768;
 }
 
@@ -228,13 +249,17 @@ void retro_init(void) {
 	stream.postAudioFrame = 0;
 	stream.postAudioBuffer = _postAudioBuffer;
 	stream.postVideoFrame = 0;
+   stream2.videoDimensionsChanged = 0;
+   stream2.postVideoFrame = 0;
+   stream3.videoDimensionsChanged = 0;
+   stream3.postVideoFrame = 0;
 }
 
 void retro_deinit(void) {
 #ifdef _3DS
-	linearFree(outputBuffer);
+	linearFree(outputBuffer1);
 #else
-	free(outputBuffer);
+	free(outputBuffer1);
 #endif
 }
 
@@ -272,6 +297,8 @@ int16_t cycleturbo(bool x/*turbo A*/, bool y/*turbo B*/, bool l2/*turbo L*/, boo
 
 void retro_run(void) {
 	uint16_t keys;
+   static int frame;
+
 	inputPollCallback();
 
 	struct retro_variable var = {
@@ -282,7 +309,9 @@ void retro_run(void) {
 	bool updated = false;
 	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
 		if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-			((struct GBA*) core->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
+			((struct GBA*) core1->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
+         ((struct GBA*) core2->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
+         ((struct GBA*) core3->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
 		}
 	}
 
@@ -297,11 +326,11 @@ void retro_run(void) {
 	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN)) << 7;
 	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) << 8;
 	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) << 9;
-   
+
    //turbo keys
    keys |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
    
-	core->setKeys(core, keys);
+	core1->setKeys(core1, keys);
 
 	static bool wasAdjustingLux = false;
 	if (wasAdjustingLux) {
@@ -323,24 +352,32 @@ void retro_run(void) {
 		}
 	}
 
-	core->runFrame(core);
+	core1->runFrame(core1);
+   core2->runFrame(core2);
+   core3->runFrame(core3);
 	unsigned width, height;
-	core->desiredVideoDimensions(core, &width, &height);
-	videoCallback(outputBuffer, width, height, BYTES_PER_PIXEL * 256);
+   core1->desiredVideoDimensions(core1, &width, &height);
+	core2->desiredVideoDimensions(core2, &width, &height);
+   core3->desiredVideoDimensions(core3, &width, &height);
+   memcpy(outputBuffer, outputBuffer1, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+   memcpy(outputBuffer + 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer2, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+   memcpy(outputBuffer + 2 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer3, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	videoCallback(outputBuffer, width, height * 3, BYTES_PER_PIXEL * 256);
+   frame++;
 
 	// This was from aliaspider patch (4539a0e), game boy audio is buggy with it (adapted for this refactored core)
 /*
 	int16_t samples[SAMPLES * 2];
-	int produced = blip_read_samples(core->getAudioChannel(core, 0), samples, SAMPLES, true);
-	blip_read_samples(core->getAudioChannel(core, 1), samples + 1, SAMPLES, true);
+	int produced = blip_read_samples(core1->getAudioChannel(core1, 0), samples, SAMPLES, true);
+	blip_read_samples(core1->getAudioChannel(core1, 1), samples + 1, SAMPLES, true);
 	audioCallback(samples, produced);
 */
 }
 
 void static _setupMaps(struct mCore* core) {
 #ifdef M_CORE_GBA
-	if (core->platform(core) == PLATFORM_GBA) {
-		struct GBA* gba = core->board;
+	if (core1->platform(core1) == PLATFORM_GBA) {
+		struct GBA* gba = core1->board;
 		struct retro_memory_descriptor descs[11];
 		struct retro_memory_map mmaps;
 		size_t romSize = gba->memory.romSize + (gba->memory.romSize & 1);
@@ -422,9 +459,12 @@ void static _setupMaps(struct mCore* core) {
 }
 
 void retro_reset(void) {
-	core->reset(core);
-	_setupMaps(core);
-
+	core1->reset(core1);
+	_setupMaps(core1);
+   core2->reset(core2);
+	_setupMaps(core2);
+   core3->reset(core3);
+   _setupMaps(core3);
 	if (rumbleCallback) {
 		CircleBufferClear(&rumbleHistory);
 	}
@@ -450,65 +490,102 @@ bool retro_load_game(const struct retro_game_info* game)
 		return false;
 	}
 
-	core = mCoreFindVF(rom);
-	if (!core) {
+	core1 = mCoreFindVF(rom);
+   core2 = mCoreFindVF(rom);
+   core3 = mCoreFindVF(rom);
+	if (!core1) {
 		rom->close(rom);
 		mappedMemoryFree(data, game->size);
 		return false;
 	}
-	mCoreInitConfig(core, NULL);
-	core->init(core);
-	core->setAVStream(core, &stream);
-
+   if (!core2) {
+      rom->close(rom);
+      mappedMemoryFree(data, game->size);
+      return false;
+   }
+   if (!core3) {
+      rom->close(rom);
+      mappedMemoryFree(data, game->size);
+      return false;
+   }
+	mCoreInitConfig(core1, NULL);
+	core1->init(core1);
+	core1->setAVStream(core1, &stream);
+   mCoreInitConfig(core2, NULL);
+	core2->init(core2);
+	core2->setAVStream(core2, &stream2);
+   mCoreInitConfig(core3, NULL);
+   core3->init(core3);
+   core3->setAVStream(core3, &stream3);
 #ifdef _3DS
 	outputBuffer = linearMemAlign(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, 0x80);
 #else
-	outputBuffer = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+   outputBuffer  = malloc(768 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	outputBuffer1 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+   outputBuffer2 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+   outputBuffer3 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 #endif
-	core->setVideoBuffer(core, outputBuffer, 256);
+	core1->setVideoBuffer(core1, outputBuffer1, 256);
+   core2->setVideoBuffer(core2, outputBuffer2, 256);
+   core3->setVideoBuffer(core3, outputBuffer3, 256);
 
-	core->setAudioBufferSize(core, SAMPLES);
+	core1->setAudioBufferSize(core1, SAMPLES);
+   core2->setAudioBufferSize(core2, SAMPLES);
+   core3->setAudioBufferSize(core3, SAMPLES);
 
-	blip_set_rates(core->getAudioChannel(core, 0), core->frequency(core), 32768);
-	blip_set_rates(core->getAudioChannel(core, 1), core->frequency(core), 32768);
+	blip_set_rates(core1->getAudioChannel(core1, 0), core1->frequency(core1), 32768);
+	blip_set_rates(core1->getAudioChannel(core1, 1), core1->frequency(core1), 32768);
 
-	core->setRumble(core, &rumble);
+	core1->setRumble(core1, &rumble);
+	core2->setRumble(core2, &rumble);
+   core3->setRumble(core3, &rumble);
 
 	savedata = anonymousMemoryMap(SIZE_CART_FLASH1M);
 	struct VFile* save = VFileFromMemory(savedata, SIZE_CART_FLASH1M);
 
 	_reloadSettings();
-	core->loadROM(core, rom);
-	core->loadSave(core, save);
+	core1->loadROM(core1, rom);
+	core1->loadSave(core1, save);
+   core2->loadROM(core2, rom);
+   core2->loadSave(core2, save);
+   core3->loadROM(core3, rom);
+   core3->loadSave(core3, save);
 
 #ifdef M_CORE_GBA
-	if (core->platform(core) == PLATFORM_GBA) {
-		struct GBA* gba = core->board;
+	if (core1->platform(core1) == PLATFORM_GBA) {
+		struct GBA* gba = core1->board;
 		gba->luminanceSource = &lux;
 
 		const char* sysDir = 0;
-		if (core->opts.useBios && environCallback(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &sysDir)) {
+		if (core1->opts.useBios && environCallback(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &sysDir)) {
 			char biosPath[PATH_MAX];
 			snprintf(biosPath, sizeof(biosPath), "%s%s%s", sysDir, PATH_SEP, "gba_bios.bin");
 			struct VFile* bios = VFileOpen(biosPath, O_RDONLY);
 			if (bios) {
-				core->loadBIOS(core, bios, 0);
+				core1->loadBIOS(core1, bios, 0);
+            core2->loadBIOS(core2, bios, 0);
+            core3->loadBIOS(core3, bios, 0);
 			}
 		}
 	}
 #endif
 
-	core->reset(core);
-	_setupMaps(core);
-
+	core1->reset(core1);
+	_setupMaps(core1);
+   core2->reset(core2);
+	_setupMaps(core2);
+   core3->reset(core3);
+   _setupMaps(core3);
 	return true;
 }
 
 void retro_unload_game(void) {
-	if (!core) {
+	if (!core1 || !core2 || !core3) {
 		return;
 	}
-	core->deinit(core);
+	core1->deinit(core1);
+   core2->deinit(core2);
+   core3->deinit(core3);
 	mappedMemoryFree(data, dataSize);
 	data = 0;
 	mappedMemoryFree(savedata, SIZE_CART_FLASH1M);
@@ -517,14 +594,14 @@ void retro_unload_game(void) {
 }
 
 size_t retro_serialize_size(void) {
-	return core->stateSize(core);
+	return core1->stateSize(core1);
 }
 
 bool retro_serialize(void* data, size_t size) {
 	if (size != retro_serialize_size()) {
 		return false;
 	}
-	core->saveState(core, data);
+	core1->saveState(core1, data);
 	return true;
 }
 
@@ -532,18 +609,18 @@ bool retro_unserialize(const void* data, size_t size) {
 	if (size != retro_serialize_size()) {
 		return false;
 	}
-	core->loadState(core, data);
+	core1->loadState(core1, data);
 	return true;
 }
 
 void retro_cheat_reset(void) {
-	mCheatDeviceClear(core->cheatDevice(core));
+	mCheatDeviceClear(core1->cheatDevice(core1));
 }
 
 void retro_cheat_set(unsigned index, bool enabled, const char* code) {
 	UNUSED(index);
 	UNUSED(enabled);
-	struct mCheatDevice* device = core->cheatDevice(core);
+	struct mCheatDevice* device = core1->cheatDevice(core1);
 	struct mCheatSet* cheatSet = NULL;
 	if (mCheatSetsSize(&device->cheats)) {
 		cheatSet = *mCheatSetsGetPointer(&device->cheats, 0);
@@ -588,22 +665,22 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info* i
 }
 
 void* retro_get_memory_data(unsigned id) {
-	struct GBA* gba = core->board;
-	struct GB* gb = core->board;
+	struct GBA* gba = core1->board;
+	struct GB* gb = core1->board;
 
 	if (id == RETRO_MEMORY_SAVE_RAM) {
 		return savedata;
 	}
 	if (id == RETRO_MEMORY_SYSTEM_RAM) {
-		if (core->platform(core) == PLATFORM_GBA)
+		if (core1->platform(core1) == PLATFORM_GBA)
 			return gba->memory.wram;
-		if (core->platform(core) == PLATFORM_GB)
+		if (core1->platform(core1) == PLATFORM_GB)
 			return gb->memory.wram;
 	}
 	if (id == RETRO_MEMORY_VIDEO_RAM) {
-		if (core->platform(core) == PLATFORM_GBA)
+		if (core1->platform(core1) == PLATFORM_GBA)
 			return gba->video.renderer->vram;
-		if (core->platform(core) == PLATFORM_GB)
+		if (core1->platform(core1) == PLATFORM_GB)
 			return gb->video.renderer->vram;
 	}
 
@@ -613,8 +690,8 @@ void* retro_get_memory_data(unsigned id) {
 size_t retro_get_memory_size(unsigned id) {
 	if (id == RETRO_MEMORY_SAVE_RAM) {
 #ifdef M_CORE_GBA
-		if (core->platform(core) == PLATFORM_GBA) {
-			switch (((struct GBA*) core->board)->memory.savedata.type) {
+		if (core1->platform(core1) == PLATFORM_GBA) {
+			switch (((struct GBA*) core1->board)->memory.savedata.type) {
 			case SAVEDATA_AUTODETECT:
 			case SAVEDATA_FLASH1M:
 				return SIZE_CART_FLASH1M;
@@ -630,8 +707,8 @@ size_t retro_get_memory_size(unsigned id) {
 		}
 #endif
 #ifdef M_CORE_GB
-		if (core->platform(core) == PLATFORM_GB) {
-			return ((struct GB*) core->board)->sramSize;
+		if (core1->platform(core1) == PLATFORM_GB) {
+			return ((struct GB*) core1->board)->sramSize;
 		}
 #endif
 	}
