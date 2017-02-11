@@ -610,21 +610,23 @@ bool retro_serialize(void* data, size_t size) {
 		return false;
 	}
    void *tmp;
-   tmp = malloc(core1->stateSize(core1));
+   size_t tmp_size = size / 4;
+
+   tmp = malloc(tmp_size);
 	core1->saveState(core1, tmp);
-   memcpy(data, tmp, core1->stateSize(core1));
+   memcpy(data, tmp, tmp_size);
    free(tmp);
-   tmp = malloc(core2->stateSize(core2));
+   tmp = malloc(tmp_size);
    core2->saveState(core2, tmp);
-   memcpy(data + core1->stateSize(core1), tmp, core2->stateSize(core2));
+   memcpy(data + tmp_size, tmp, tmp_size);
    free(tmp);
-   tmp = malloc(core3->stateSize(core3));
+   tmp = malloc(tmp_size);
    core3->saveState(core3, tmp);
-   memcpy(data + core1->stateSize(core1) + core2->stateSize(core2), tmp, core3->stateSize(core3));
+   memcpy(data + 2 * tmp_size, tmp, tmp_size);
    free(tmp);
-   tmp = malloc(core4->stateSize(core4));
+   tmp = malloc(tmp_size);
    core4->saveState(core4, tmp);
-   memcpy(data + core1->stateSize(core1) + core2->stateSize(core2) + core3->stateSize(core3), tmp, core4->stateSize(core4));
+   memcpy(data + 3 * tmp_size, tmp, tmp_size);
    free(tmp);
 	return true;
 }
@@ -633,10 +635,11 @@ bool retro_unserialize(const void* data, size_t size) {
 	if (size != retro_serialize_size()) {
 		return false;
 	}
+   size_t tmp_size = size / 4;
 	core1->loadState(core1, data);
-   core2->loadState(core2, data + core1->stateSize(core1));
-   core3->loadState(core3, data + core1->stateSize(core1) + core2->stateSize(core2));
-   core4->loadState(core4, data + core1->stateSize(core1) + core2->stateSize(core2) + core3->stateSize(core3));
+   core2->loadState(core2, data + tmp_size);
+   core3->loadState(core3, data + 2 * tmp_size);
+   core4->loadState(core4, data + 3 * tmp_size);
 	return true;
 }
 
