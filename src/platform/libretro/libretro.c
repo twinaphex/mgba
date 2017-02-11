@@ -63,7 +63,7 @@ static void* outputBuffer4;
 static void* data;
 static size_t dataSize;
 static void* savedata;
-static struct mAVStream stream;
+static struct mAVStream stream1;
 static struct mAVStream stream2;
 static struct mAVStream stream3;
 static struct mAVStream stream4;
@@ -179,9 +179,7 @@ void retro_get_system_info(struct retro_system_info* info) {
 void retro_get_system_av_info(struct retro_system_av_info* info) {
 	unsigned width, height;
 	core1->desiredVideoDimensions(core1, &width, &height);
-   core2->desiredVideoDimensions(core2, &width, &height);
-   core3->desiredVideoDimensions(core3, &width, &height);
-   core4->desiredVideoDimensions(core4, &width, &height);
+
 	info->geometry.base_width = width;
 	info->geometry.base_height = height * 4;
 	info->geometry.max_width = width;
@@ -255,10 +253,10 @@ void retro_init(void) {
 	logger.log = GBARetroLog;
 	mLogSetDefaultLogger(&logger);
 
-	stream.videoDimensionsChanged = 0;
-	stream.postAudioFrame = 0;
-	stream.postAudioBuffer = _postAudioBuffer;
-	stream.postVideoFrame = 0;
+	stream1.videoDimensionsChanged = 0;
+	stream1.postAudioFrame = 0;
+	stream1.postAudioBuffer = _postAudioBuffer;
+	stream1.postVideoFrame = 0;
    stream2.videoDimensionsChanged = 0;
    stream2.postVideoFrame = 0;
    stream3.videoDimensionsChanged = 0;
@@ -371,23 +369,12 @@ void retro_run(void) {
    core4->runFrame(core4);
 	unsigned width, height;
    core1->desiredVideoDimensions(core1, &width, &height);
-	core2->desiredVideoDimensions(core2, &width, &height);
-   core3->desiredVideoDimensions(core3, &width, &height);
-   core4->desiredVideoDimensions(core4, &width, &height);
    memcpy(outputBuffer, outputBuffer1, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
    memcpy(outputBuffer + 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer2, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
    memcpy(outputBuffer + 2 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer3, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
    memcpy(outputBuffer + 3 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer4, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 	videoCallback(outputBuffer, width, height * 4, BYTES_PER_PIXEL * 256);
    frame++;
-
-	// This was from aliaspider patch (4539a0e), game boy audio is buggy with it (adapted for this refactored core)
-/*
-	int16_t samples[SAMPLES * 2];
-	int produced = blip_read_samples(core1->getAudioChannel(core1, 0), samples, SAMPLES, true);
-	blip_read_samples(core1->getAudioChannel(core1, 1), samples + 1, SAMPLES, true);
-	audioCallback(samples, produced);
-*/
 }
 
 void static _setupMaps(struct mCore* core) {
@@ -512,29 +499,15 @@ bool retro_load_game(const struct retro_game_info* game)
    core2 = mCoreFindVF(rom);
    core3 = mCoreFindVF(rom);
    core4 = mCoreFindVF(rom);
-	if (!core1) {
+	if (!core1 || !core2 || !core3 || !core4) {
 		rom->close(rom);
 		mappedMemoryFree(data, game->size);
 		return false;
 	}
-   if (!core2) {
-      rom->close(rom);
-      mappedMemoryFree(data, game->size);
-      return false;
-   }
-   if (!core3) {
-      rom->close(rom);
-      mappedMemoryFree(data, game->size);
-      return false;
-   }
-   if (!core4) {
-      rom->close(rom);
-      mappedMemoryFree(data, game->size);
-      return false;
-   }
+
 	mCoreInitConfig(core1, NULL);
 	core1->init(core1);
-	core1->setAVStream(core1, &stream);
+	core1->setAVStream(core1, &stream1);
    mCoreInitConfig(core2, NULL);
 	core2->init(core2);
 	core2->setAVStream(core2, &stream2);
@@ -568,9 +541,6 @@ bool retro_load_game(const struct retro_game_info* game)
 	blip_set_rates(core1->getAudioChannel(core1, 1), core1->frequency(core1), 32768);
 
 	core1->setRumble(core1, &rumble);
-	core2->setRumble(core2, &rumble);
-   core3->setRumble(core3, &rumble);
-   core4->setRumble(core4, &rumble);
 
 	savedata = anonymousMemoryMap(SIZE_CART_FLASH1M);
 	struct VFile* save = VFileFromMemory(savedata, SIZE_CART_FLASH1M);
@@ -632,14 +602,30 @@ void retro_unload_game(void) {
 }
 
 size_t retro_serialize_size(void) {
-	return core1->stateSize(core1);
+	return 4 * (core1->stateSize(core1));
 }
 
 bool retro_serialize(void* data, size_t size) {
 	if (size != retro_serialize_size()) {
 		return false;
 	}
-	core1->saveState(core1, data);
+   void *tmp;
+   tmp = malloc(core1->stateSize(core1));
+	core1->saveState(core1, tmp);
+   memcpy(data, tmp, core1->stateSize(core1));
+   free(tmp);
+   tmp = malloc(core2->stateSize(core2));
+   core2->saveState(core2, tmp);
+   memcpy(data + core1->stateSize(core1), tmp, core2->stateSize(core2));
+   free(tmp);
+   tmp = malloc(core3->stateSize(core3));
+   core3->saveState(core3, tmp);
+   memcpy(data + core1->stateSize(core1) + core2->stateSize(core2), tmp, core3->stateSize(core3));
+   free(tmp);
+   tmp = malloc(core4->stateSize(core4));
+   core4->saveState(core4, tmp);
+   memcpy(data + core1->stateSize(core1) + core2->stateSize(core2) + core3->stateSize(core3), tmp, core4->stateSize(core4));
+   free(tmp);
 	return true;
 }
 
@@ -648,6 +634,9 @@ bool retro_unserialize(const void* data, size_t size) {
 		return false;
 	}
 	core1->loadState(core1, data);
+   core2->loadState(core2, data + core1->stateSize(core1));
+   core3->loadState(core3, data + core1->stateSize(core1) + core2->stateSize(core2));
+   core4->loadState(core4, data + core1->stateSize(core1) + core2->stateSize(core2) + core3->stateSize(core3));
 	return true;
 }
 
