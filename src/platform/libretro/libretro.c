@@ -349,7 +349,7 @@ void retro_run(void) {
    core1->setKeys(core1, keys[0]);
    core2->setKeys(core2, keys[1]);
    core3->setKeys(core3, keys[2]);
-   core3->setKeys(core3, keys[3]);
+   core4->setKeys(core4, keys[3]);
 
 	static bool wasAdjustingLux = false;
 	if (wasAdjustingLux) {
