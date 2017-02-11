@@ -266,7 +266,11 @@ void retro_deinit(void) {
 #ifdef _3DS
 	linearFree(outputBuffer1);
 #else
-	free(outputBuffer1);
+	free(outputBuffer);
+   free(outputBuffer1);
+   free(outputBuffer2);
+   free(outputBuffer3);
+   free(outputBuffer4);
 #endif
 }
 
@@ -303,7 +307,7 @@ int16_t cycleturbo(bool x/*turbo A*/, bool y/*turbo B*/, bool l2/*turbo L*/, boo
 
 
 void retro_run(void) {
-	uint16_t keys;
+	uint16_t keys[4];
    static int frame;
 
 	inputPollCallback();
@@ -323,22 +327,29 @@ void retro_run(void) {
 		}
 	}
 
-	keys = 0;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A)) << 0;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B)) << 1;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) << 3;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) << 4;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT)) << 5;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP)) << 6;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN)) << 7;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) << 8;
-	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) << 9;
+   for (int i = 0; i < 4; i++)
+   {
+   	keys[i] = 0;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A)) << 0;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B)) << 1;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) << 3;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) << 4;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT)) << 5;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP)) << 6;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN)) << 7;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) << 8;
+   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) << 9;
 
-   //turbo keys
-   keys |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
-   
-	core1->setKeys(core1, keys);
+      //turbo keys[i]
+      keys[i] |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
+
+   	
+   }
+   core1->setKeys(core1, keys[0]);
+   core2->setKeys(core2, keys[1]);
+   core3->setKeys(core3, keys[2]);
+   core3->setKeys(core3, keys[3]);
 
 	static bool wasAdjustingLux = false;
 	if (wasAdjustingLux) {
@@ -587,7 +598,7 @@ void retro_unload_game(void) {
 	if (!core1 || !core2 || !core3 || !core4) {
 		return;
 	}
-	core1->deinit(core1);
+	/*core1->deinit(core1);
    core2->deinit(core2);
    core3->deinit(core3);
    core4->deinit(core4);
@@ -595,7 +606,7 @@ void retro_unload_game(void) {
 	data = 0;
 	mappedMemoryFree(savedata, SIZE_CART_FLASH1M);
 	savedata = 0;
-	CircleBufferDeinit(&rumbleHistory);
+	CircleBufferDeinit(&rumbleHistory);*/
 }
 
 size_t retro_serialize_size(void) {
