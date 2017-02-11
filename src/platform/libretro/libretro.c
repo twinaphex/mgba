@@ -19,6 +19,7 @@
 #include "gba/cheats.h"
 #include "gba/core.h"
 #include "gba/serialize.h"
+//#include "gba/sio/lockstep.h"
 #endif
 #include "util/circle-buffer.h"
 #include "util/memory.h"
@@ -74,6 +75,8 @@ static struct GBALuminanceSource lux;
 static int luxLevel;
 static struct mLogger logger;
 
+//GBASIOLockstep m_lockstep;
+
 static void _reloadSettings(void) {
 	struct mCoreOptions opts = {
 		.useBios = true,
@@ -99,30 +102,30 @@ static void _reloadSettings(void) {
 	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
 		if (strcmp(var.value, "Don't Remove") == 0) {
 			mCoreConfigSetDefaultValue(&core1->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core4->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core4->config, "idleOptimization", "ignore");
 		} else if (strcmp(var.value, "Remove Known") == 0) {
 			mCoreConfigSetDefaultValue(&core1->config, "idleOptimization", "remove");
-         mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core4->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core4->config, "idleOptimization", "ignore");
 		} else if (strcmp(var.value, "Detect and Remove") == 0) {
 			mCoreConfigSetDefaultValue(&core1->config, "idleOptimization", "detect");
-         mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
-         mCoreConfigSetDefaultValue(&core4->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core2->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core3->config, "idleOptimization", "ignore");
+			mCoreConfigSetDefaultValue(&core4->config, "idleOptimization", "ignore");
 		}
 	}
 
 	mCoreConfigLoadDefaults(&core1->config, &opts);
 	mCoreLoadConfig(core1);
-   mCoreConfigLoadDefaults(&core2->config, &opts);
-   mCoreLoadConfig(core2);
-   mCoreConfigLoadDefaults(&core3->config, &opts);
-   mCoreLoadConfig(core3);
-   mCoreConfigLoadDefaults(&core4->config, &opts);
-   mCoreLoadConfig(core4);
+	mCoreConfigLoadDefaults(&core2->config, &opts);
+	mCoreLoadConfig(core2);
+	mCoreConfigLoadDefaults(&core3->config, &opts);
+	mCoreLoadConfig(core3);
+	mCoreConfigLoadDefaults(&core4->config, &opts);
+	mCoreLoadConfig(core4);
 }
 
 unsigned retro_api_version(void) {
@@ -254,12 +257,12 @@ void retro_init(void) {
 	stream1.postAudioFrame = 0;
 	stream1.postAudioBuffer = _postAudioBuffer;
 	stream1.postVideoFrame = 0;
-   stream2.videoDimensionsChanged = 0;
-   stream2.postVideoFrame = 0;
-   stream3.videoDimensionsChanged = 0;
-   stream3.postVideoFrame = 0;
-   stream4.videoDimensionsChanged = 0;
-   stream4.postVideoFrame = 0;
+	stream2.videoDimensionsChanged = 0;
+	stream2.postVideoFrame = 0;
+	stream3.videoDimensionsChanged = 0;
+	stream3.postVideoFrame = 0;
+	stream4.videoDimensionsChanged = 0;
+	stream4.postVideoFrame = 0;
 }
 
 void retro_deinit(void) {
@@ -267,10 +270,10 @@ void retro_deinit(void) {
 	linearFree(outputBuffer1);
 #else
 	free(outputBuffer);
-   free(outputBuffer1);
-   free(outputBuffer2);
-   free(outputBuffer3);
-   free(outputBuffer4);
+	free(outputBuffer1);
+	free(outputBuffer2);
+	free(outputBuffer3);
+	free(outputBuffer4);
 #endif
 }
 
@@ -279,36 +282,36 @@ static int turboclock = 0;
 static bool indownstate = true;
 
 int16_t cycleturbo(bool x/*turbo A*/, bool y/*turbo B*/, bool l2/*turbo L*/, bool r2/*turbo R*/) {
-   int16_t buttons = 0;
-   turboclock++;
-   if (turboclock >= 2) {
-      turboclock = 0;
-      indownstate = !indownstate;
-   }
-   
-   if (x) {
-      buttons |= indownstate << 0;
-   }
-   
-   if (y) {
-      buttons |= indownstate << 1;
-   }
-   
-   if (l2) {
-      buttons |= indownstate << 9;
-   }
-   
-   if (r2) {
-      buttons |= indownstate << 8;
-   }
-   
-   return buttons;
+	int16_t buttons = 0;
+	turboclock++;
+	if (turboclock >= 2) {
+		turboclock = 0;
+		indownstate = !indownstate;
+	}
+	
+	if (x) {
+		buttons |= indownstate << 0;
+	}
+	
+	if (y) {
+		buttons |= indownstate << 1;
+	}
+	
+	if (l2) {
+		buttons |= indownstate << 9;
+	}
+	
+	if (r2) {
+		buttons |= indownstate << 8;
+	}
+	
+	return buttons;
 }
 
 
 void retro_run(void) {
 	uint16_t keys[4];
-   static int frame;
+	static int frame;
 
 	inputPollCallback();
 
@@ -321,40 +324,40 @@ void retro_run(void) {
 	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
 		if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
 			((struct GBA*) core1->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
-         ((struct GBA*) core2->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
-         ((struct GBA*) core3->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
-         ((struct GBA*) core4->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
+			((struct GBA*) core2->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
+			((struct GBA*) core3->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
+			((struct GBA*) core4->board)->allowOpposingDirections = strcmp(var.value, "yes") == 0;
 		}
 	}
 
-   for (int i = 0; i < 4; i++)
-   {
-   	keys[i] = 0;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A)) << 0;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B)) << 1;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) << 3;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) << 4;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT)) << 5;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP)) << 6;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN)) << 7;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) << 8;
-   	keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) << 9;
+	for (int i = 0; i < 4; i++)
+	{
+		keys[i] = 0;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A)) << 0;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B)) << 1;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) << 3;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) << 4;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT)) << 5;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP)) << 6;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN)) << 7;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) << 8;
+		keys[i] |= (!!inputCallback(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) << 9;
 
-      //turbo keys[i]
-      keys[i] |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
+		//turbo keys[i]
+		keys[i] |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
 
-   	
-   }
-   core1->setKeys(core1, keys[0]);
-   core2->setKeys(core2, keys[1]);
-   core3->setKeys(core3, keys[2]);
-   core4->setKeys(core4, keys[3]);
+		
+	}
+	core1->setKeys(core1, keys[0]);
+	core2->setKeys(core2, keys[1]);
+	core3->setKeys(core3, keys[2]);
+	core4->setKeys(core4, keys[3]);
 
 	static bool wasAdjustingLux = false;
 	if (wasAdjustingLux) {
 		wasAdjustingLux = inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3) ||
-		                  inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
+								inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
 	} else {
 		if (inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3)) {
 			++luxLevel;
@@ -372,17 +375,17 @@ void retro_run(void) {
 	}
 
 	core1->runFrame(core1);
-   core2->runFrame(core2);
-   core3->runFrame(core3);
-   core4->runFrame(core4);
+	core2->runFrame(core2);
+	core3->runFrame(core3);
+	core4->runFrame(core4);
 	unsigned width, height;
-   core1->desiredVideoDimensions(core1, &width, &height);
-   memcpy(outputBuffer, outputBuffer1, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-   memcpy(outputBuffer + 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer2, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-   memcpy(outputBuffer + 2 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer3, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-   memcpy(outputBuffer + 3 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer4, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	core1->desiredVideoDimensions(core1, &width, &height);
+	memcpy(outputBuffer, outputBuffer1, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	memcpy(outputBuffer + 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer2, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	memcpy(outputBuffer + 2 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer3, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	memcpy(outputBuffer + 3 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer4, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 	videoCallback(outputBuffer, width, height * 4, BYTES_PER_PIXEL * 256);
-   frame++;
+	frame++;
 }
 
 void static _setupMaps(struct mCore* core) {
@@ -397,67 +400,67 @@ void static _setupMaps(struct mCore* core) {
 		size_t savedataSize = retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
 		/* Map internal working RAM */
-		descs[0].ptr    = gba->memory.iwram;
+		descs[0].ptr	 = gba->memory.iwram;
 		descs[0].start  = BASE_WORKING_IRAM;
-		descs[0].len    = SIZE_WORKING_IRAM;
+		descs[0].len	 = SIZE_WORKING_IRAM;
 		descs[0].select = 0xFF000000;
 
 		/* Map working RAM */
-		descs[1].ptr    = gba->memory.wram;
+		descs[1].ptr	 = gba->memory.wram;
 		descs[1].start  = BASE_WORKING_RAM;
-		descs[1].len    = SIZE_WORKING_RAM;
+		descs[1].len	 = SIZE_WORKING_RAM;
 		descs[1].select = 0xFF000000;
 
 		/* Map save RAM */
 		/* TODO: if SRAM is flash, use start=0 addrspace="S" instead */
-		descs[2].ptr    = savedataSize ? savedata : NULL;
+		descs[2].ptr	 = savedataSize ? savedata : NULL;
 		descs[2].start  = BASE_CART_SRAM;
-		descs[2].len    = savedataSize;
+		descs[2].len	 = savedataSize;
 
 		/* Map ROM */
-		descs[3].ptr    = gba->memory.rom;
+		descs[3].ptr	 = gba->memory.rom;
 		descs[3].start  = BASE_CART0;
-		descs[3].len    = romSize;
+		descs[3].len	 = romSize;
 		descs[3].flags  = RETRO_MEMDESC_CONST;
 
-		descs[4].ptr    = gba->memory.rom;
+		descs[4].ptr	 = gba->memory.rom;
 		descs[4].start  = BASE_CART1;
-		descs[4].len    = romSize;
+		descs[4].len	 = romSize;
 		descs[4].flags  = RETRO_MEMDESC_CONST;
 
-		descs[5].ptr    = gba->memory.rom;
+		descs[5].ptr	 = gba->memory.rom;
 		descs[5].start  = BASE_CART2;
-		descs[5].len    = romSize;
+		descs[5].len	 = romSize;
 		descs[5].flags  = RETRO_MEMDESC_CONST;
 
 		/* Map BIOS */
-		descs[6].ptr    = gba->memory.bios;
+		descs[6].ptr	 = gba->memory.bios;
 		descs[6].start  = BASE_BIOS;
-		descs[6].len    = SIZE_BIOS;
+		descs[6].len	 = SIZE_BIOS;
 		descs[6].flags  = RETRO_MEMDESC_CONST;
 
 		/* Map VRAM */
-		descs[7].ptr    = gba->video.vram;
+		descs[7].ptr	 = gba->video.vram;
 		descs[7].start  = BASE_VRAM;
-		descs[7].len    = SIZE_VRAM;
+		descs[7].len	 = SIZE_VRAM;
 		descs[7].select = 0xFF000000;
 
 		/* Map palette RAM */
-		descs[8].ptr    = gba->video.palette;
+		descs[8].ptr	 = gba->video.palette;
 		descs[8].start  = BASE_PALETTE_RAM;
-		descs[8].len    = SIZE_PALETTE_RAM;
+		descs[8].len	 = SIZE_PALETTE_RAM;
 		descs[8].select = 0xFF000000;
 
 		/* Map OAM */
-		descs[9].ptr    = &gba->video.oam; /* video.oam is a structure */
+		descs[9].ptr	 = &gba->video.oam; /* video.oam is a structure */
 		descs[9].start  = BASE_OAM;
-		descs[9].len    = SIZE_OAM;
+		descs[9].len	 = SIZE_OAM;
 		descs[9].select = 0xFF000000;
 
 		/* Map mmapped I/O */
-		descs[10].ptr    = gba->memory.io;
+		descs[10].ptr	 = gba->memory.io;
 		descs[10].start  = BASE_IO;
-		descs[10].len    = SIZE_IO;
+		descs[10].len	 = SIZE_IO;
 
 		mmaps.descriptors = descs;
 		mmaps.num_descriptors = sizeof(descs) / sizeof(descs[0]);
@@ -472,12 +475,12 @@ void static _setupMaps(struct mCore* core) {
 void retro_reset(void) {
 	core1->reset(core1);
 	_setupMaps(core1);
-   core2->reset(core2);
+	core2->reset(core2);
 	_setupMaps(core2);
-   core3->reset(core3);
-   _setupMaps(core3);
-   core4->reset(core4);
-   _setupMaps(core4);
+	core3->reset(core3);
+	_setupMaps(core3);
+	core4->reset(core4);
+	_setupMaps(core4);
 	if (rumbleCallback) {
 		CircleBufferClear(&rumbleHistory);
 	}
@@ -487,8 +490,8 @@ bool retro_load_game(const struct retro_game_info* game)
 {
 	struct VFile* rom;
 
-   if (!game)
-      return false;
+	if (!game)
+		return false;
 
 	if (game->data) {
 		data = anonymousMemoryMap(game->size);
@@ -504,9 +507,9 @@ bool retro_load_game(const struct retro_game_info* game)
 	}
 
 	core1 = mCoreFindVF(rom);
-   core2 = mCoreFindVF(rom);
-   core3 = mCoreFindVF(rom);
-   core4 = mCoreFindVF(rom);
+	core2 = mCoreFindVF(rom);
+	core3 = mCoreFindVF(rom);
+	core4 = mCoreFindVF(rom);
 	if (!core1 || !core2 || !core3 || !core4) {
 		rom->close(rom);
 		mappedMemoryFree(data, game->size);
@@ -516,34 +519,34 @@ bool retro_load_game(const struct retro_game_info* game)
 	mCoreInitConfig(core1, NULL);
 	core1->init(core1);
 	core1->setAVStream(core1, &stream1);
-   mCoreInitConfig(core2, NULL);
+	mCoreInitConfig(core2, NULL);
 	core2->init(core2);
 	core2->setAVStream(core2, &stream2);
-   mCoreInitConfig(core3, NULL);
-   core3->init(core3);
-   core3->setAVStream(core3, &stream3);
-   mCoreInitConfig(core4, NULL);
-   core4->init(core4);
-   core4->setAVStream(core4, &stream4);
+	mCoreInitConfig(core3, NULL);
+	core3->init(core3);
+	core3->setAVStream(core3, &stream3);
+	mCoreInitConfig(core4, NULL);
+	core4->init(core4);
+	core4->setAVStream(core4, &stream4);
 #ifdef _3DS
 	outputBuffer = linearMemAlign(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, 0x80);
 #else
-   outputBuffer  = (uint8_t*)malloc(1024 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	outputBuffer  = (uint8_t*)malloc(1024 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 	outputBuffer1 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-   outputBuffer2 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-   outputBuffer3 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-   outputBuffer4 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	outputBuffer2 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	outputBuffer3 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
+	outputBuffer4 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 #endif
 
 	core1->setVideoBuffer(core1, outputBuffer1, 256);
-   core2->setVideoBuffer(core2, outputBuffer2, 256);
-   core3->setVideoBuffer(core3, outputBuffer3, 256);
-   core4->setVideoBuffer(core4, outputBuffer4, 256);
+	core2->setVideoBuffer(core2, outputBuffer2, 256);
+	core3->setVideoBuffer(core3, outputBuffer3, 256);
+	core4->setVideoBuffer(core4, outputBuffer4, 256);
 
 	core1->setAudioBufferSize(core1, SAMPLES);
-   core2->setAudioBufferSize(core2, SAMPLES);
-   core3->setAudioBufferSize(core3, SAMPLES);
-   core4->setAudioBufferSize(core4, SAMPLES);
+	core2->setAudioBufferSize(core2, SAMPLES);
+	core3->setAudioBufferSize(core3, SAMPLES);
+	core4->setAudioBufferSize(core4, SAMPLES);
 
 	blip_set_rates(core1->getAudioChannel(core1, 0), core1->frequency(core1), 32768);
 	blip_set_rates(core1->getAudioChannel(core1, 1), core1->frequency(core1), 32768);
@@ -556,12 +559,12 @@ bool retro_load_game(const struct retro_game_info* game)
 	_reloadSettings();
 	core1->loadROM(core1, rom);
 	core1->loadSave(core1, save);
-   core2->loadROM(core2, rom);
-   core2->loadSave(core2, save);
-   core3->loadROM(core3, rom);
-   core3->loadSave(core3, save);
-   core4->loadROM(core4, rom);
-   core4->loadSave(core4, save);
+	core2->loadROM(core2, rom);
+	core2->loadSave(core2, save);
+	core3->loadROM(core3, rom);
+	core3->loadSave(core3, save);
+	core4->loadROM(core4, rom);
+	core4->loadSave(core4, save);
 
 #ifdef M_CORE_GBA
 	if (core1->platform(core1) == PLATFORM_GBA) {
@@ -575,9 +578,9 @@ bool retro_load_game(const struct retro_game_info* game)
 			struct VFile* bios = VFileOpen(biosPath, O_RDONLY);
 			if (bios) {
 				core1->loadBIOS(core1, bios, 0);
-            core2->loadBIOS(core2, bios, 0);
-            core3->loadBIOS(core3, bios, 0);
-            core4->loadBIOS(core4, bios, 0);
+				core2->loadBIOS(core2, bios, 0);
+				core3->loadBIOS(core3, bios, 0);
+				core4->loadBIOS(core4, bios, 0);
 			}
 		}
 	}
@@ -585,12 +588,12 @@ bool retro_load_game(const struct retro_game_info* game)
 
 	core1->reset(core1);
 	_setupMaps(core1);
-   core2->reset(core2);
+	core2->reset(core2);
 	_setupMaps(core2);
-   core3->reset(core3);
-   _setupMaps(core3);
-   core4->reset(core4);
-   _setupMaps(core4);
+	core3->reset(core3);
+	_setupMaps(core3);
+	core4->reset(core4);
+	_setupMaps(core4);
 	return true;
 }
 
@@ -599,9 +602,9 @@ void retro_unload_game(void) {
 		return;
 	}
 	/*core1->deinit(core1);
-   core2->deinit(core2);
-   core3->deinit(core3);
-   core4->deinit(core4);
+	core2->deinit(core2);
+	core3->deinit(core3);
+	core4->deinit(core4);
 	mappedMemoryFree(data, dataSize);
 	data = 0;
 	mappedMemoryFree(savedata, SIZE_CART_FLASH1M);
@@ -617,25 +620,25 @@ bool retro_serialize(void* data, size_t size) {
 	if (size != retro_serialize_size()) {
 		return false;
 	}
-   void *tmp;
-   size_t tmp_size = size / 4;
+	void *tmp;
+	size_t tmp_size = size / 4;
 
-   tmp = malloc(tmp_size);
+	tmp = malloc(tmp_size);
 	core1->saveState(core1, tmp);
-   memcpy(data, tmp, tmp_size);
-   free(tmp);
-   tmp = malloc(tmp_size);
-   core2->saveState(core2, tmp);
-   memcpy(data + tmp_size, tmp, tmp_size);
-   free(tmp);
-   tmp = malloc(tmp_size);
-   core3->saveState(core3, tmp);
-   memcpy(data + 2 * tmp_size, tmp, tmp_size);
-   free(tmp);
-   tmp = malloc(tmp_size);
-   core4->saveState(core4, tmp);
-   memcpy(data + 3 * tmp_size, tmp, tmp_size);
-   free(tmp);
+	memcpy(data, tmp, tmp_size);
+	free(tmp);
+	tmp = malloc(tmp_size);
+	core2->saveState(core2, tmp);
+	memcpy(data + tmp_size, tmp, tmp_size);
+	free(tmp);
+	tmp = malloc(tmp_size);
+	core3->saveState(core3, tmp);
+	memcpy(data + 2 * tmp_size, tmp, tmp_size);
+	free(tmp);
+	tmp = malloc(tmp_size);
+	core4->saveState(core4, tmp);
+	memcpy(data + 3 * tmp_size, tmp, tmp_size);
+	free(tmp);
 	return true;
 }
 
@@ -643,11 +646,11 @@ bool retro_unserialize(const void* data, size_t size) {
 	if (size != retro_serialize_size()) {
 		return false;
 	}
-   size_t tmp_size = size / 4;
+	size_t tmp_size = size / 4;
 	core1->loadState(core1, data);
-   core2->loadState(core2, data + tmp_size);
-   core3->loadState(core3, data + 2 * tmp_size);
-   core4->loadState(core4, data + 3 * tmp_size);
+	core2->loadState(core2, data + tmp_size);
+	core3->loadState(core3, data + 2 * tmp_size);
+	core4->loadState(core4, data + 3 * tmp_size);
 	return true;
 }
 
