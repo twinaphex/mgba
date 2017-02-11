@@ -186,9 +186,6 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
 	info->geometry.max_height = height * 4;
 	info->geometry.aspect_ratio = width / (double) (height * 4);
 	info->timing.fps = core1->frequency(core1) / (float) core1->frameCycles(core1);
-   info->timing.fps = core2->frequency(core2) / (float) core2->frameCycles(core2);
-   info->timing.fps = core3->frequency(core3) / (float) core3->frameCycles(core3);
-   info->timing.fps = core4->frequency(core4) / (float) core4->frameCycles(core4);
 	info->timing.sample_rate = 32768;
 }
 
