@@ -188,7 +188,7 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
 	info->timing.fps = core1->frequency(core1) / (float) core1->frameCycles(core1);
    info->timing.fps = core2->frequency(core2) / (float) core2->frameCycles(core2);
    info->timing.fps = core3->frequency(core3) / (float) core3->frameCycles(core3);
-   info->timing.fps = core4->frequency(core4) / (float) core3->frameCycles(core4);
+   info->timing.fps = core4->frequency(core4) / (float) core4->frameCycles(core4);
 	info->timing.sample_rate = 32768;
 }
 
@@ -641,38 +641,11 @@ bool retro_unserialize(const void* data, size_t size) {
 }
 
 void retro_cheat_reset(void) {
-	mCheatDeviceClear(core1->cheatDevice(core1));
+	
 }
 
 void retro_cheat_set(unsigned index, bool enabled, const char* code) {
-	UNUSED(index);
-	UNUSED(enabled);
-	struct mCheatDevice* device = core1->cheatDevice(core1);
-	struct mCheatSet* cheatSet = NULL;
-	if (mCheatSetsSize(&device->cheats)) {
-		cheatSet = *mCheatSetsGetPointer(&device->cheats, 0);
-	} else {
-		cheatSet = device->createSet(device, NULL);
-		mCheatAddSet(device, cheatSet);
-	}
-	// Convert the super wonky unportable libretro format to something normal
-	char realCode[] = "XXXXXXXX XXXXXXXX";
-	size_t len = strlen(code) + 1; // Include null terminator
-	size_t i, pos;
-	for (i = 0, pos = 0; i < len; ++i) {
-		if (isspace((int) code[i]) || code[i] == '+') {
-			realCode[pos] = ' ';
-		} else {
-			realCode[pos] = code[i];
-		}
-		if ((pos == 13 && (realCode[pos] == ' ' || !realCode[pos])) || pos == 17) {
-			realCode[pos] = '\0';
-			mCheatAddLine(cheatSet, realCode, 0);
-			pos = 0;
-			continue;
-		}
-		++pos;
-	}
+
 }
 
 unsigned retro_get_region(void) {
