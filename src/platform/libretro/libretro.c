@@ -19,6 +19,7 @@
 #include "gba/cheats.h"
 #include "gba/core.h"
 #include "gba/serialize.h"
+#include "gba/sio.h"
 //#include "gba/sio/lockstep.h"
 #endif
 #include "util/circle-buffer.h"
@@ -57,10 +58,6 @@ static struct mCore* core2;
 static struct mCore* core3;
 static struct mCore* core4;
 static void* outputBuffer;
-static void* outputBuffer1;
-static void* outputBuffer2;
-static void* outputBuffer3;
-static void* outputBuffer4;
 static void* data;
 static size_t dataSize;
 static void* savedata;
@@ -74,6 +71,10 @@ static struct mRumble rumble;
 static struct GBALuminanceSource lux;
 static int luxLevel;
 static struct mLogger logger;
+struct GBA* gba1;
+struct GBA* gba2;
+struct GBA* gba3;
+struct GBA* gba4;
 
 //GBASIOLockstep m_lockstep;
 
@@ -175,7 +176,7 @@ void retro_get_system_info(struct retro_system_info* info) {
 #else
 	info->library_version = "git";
 #endif
-	info->library_name = "mGBAD";
+	info->library_name = "mGBA Quad";
 	info->block_extract = false;
 }
 
@@ -183,11 +184,11 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
 	unsigned width, height;
 	core1->desiredVideoDimensions(core1, &width, &height);
 
-	info->geometry.base_width = width;
-	info->geometry.base_height = height * 4;
-	info->geometry.max_width = width;
-	info->geometry.max_height = height * 4;
-	info->geometry.aspect_ratio = width / (double) (height * 4);
+	info->geometry.base_width = width * 2;
+	info->geometry.base_height = height * 2;
+	info->geometry.max_width = 512;
+	info->geometry.max_height = VIDEO_VERTICAL_PIXELS * 2;
+	info->geometry.aspect_ratio = width / (double) (height);
 	info->timing.fps = core1->frequency(core1) / (float) core1->frameCycles(core1);
 	info->timing.sample_rate = 32768;
 }
@@ -267,13 +268,9 @@ void retro_init(void) {
 
 void retro_deinit(void) {
 #ifdef _3DS
-	linearFree(outputBuffer1);
+	linearFree(outputBuffer);
 #else
 	free(outputBuffer);
-	free(outputBuffer1);
-	free(outputBuffer2);
-	free(outputBuffer3);
-	free(outputBuffer4);
 #endif
 }
 
@@ -380,11 +377,7 @@ void retro_run(void) {
 	core4->runFrame(core4);
 	unsigned width, height;
 	core1->desiredVideoDimensions(core1, &width, &height);
-	memcpy(outputBuffer, outputBuffer1, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	memcpy(outputBuffer + 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer2, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	memcpy(outputBuffer + 2 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer3, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	memcpy(outputBuffer + 3 * 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, outputBuffer4, 256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	videoCallback(outputBuffer, width, height * 4, BYTES_PER_PIXEL * 256);
+	videoCallback(outputBuffer, width * 2, VIDEO_VERTICAL_PIXELS * 2 , BYTES_PER_PIXEL * 512);;
 	frame++;
 }
 
@@ -532,21 +525,11 @@ bool retro_load_game(const struct retro_game_info* game)
 	outputBuffer = linearMemAlign(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, 0x80);
 #else
 	outputBuffer  = (uint8_t*)malloc(1024 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	outputBuffer1 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	outputBuffer2 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	outputBuffer3 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-	outputBuffer4 = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
 #endif
-
-	core1->setVideoBuffer(core1, outputBuffer1, 256);
-	core2->setVideoBuffer(core2, outputBuffer2, 256);
-	core3->setVideoBuffer(core3, outputBuffer3, 256);
-	core4->setVideoBuffer(core4, outputBuffer4, 256);
-
-	core1->setAudioBufferSize(core1, SAMPLES);
-	core2->setAudioBufferSize(core2, SAMPLES);
-	core3->setAudioBufferSize(core3, SAMPLES);
-	core4->setAudioBufferSize(core4, SAMPLES);
+	core1->setVideoBuffer(core1, outputBuffer, 512);
+	core2->setVideoBuffer(core2, (uint8_t*)outputBuffer + BYTES_PER_PIXEL * VIDEO_HORIZONTAL_PIXELS, 512);
+	core3->setVideoBuffer(core3, (uint8_t*)outputBuffer + BYTES_PER_PIXEL * (512 * VIDEO_VERTICAL_PIXELS), 512);
+	core4->setVideoBuffer(core4, (uint8_t*)outputBuffer + BYTES_PER_PIXEL * (512 * VIDEO_VERTICAL_PIXELS + VIDEO_HORIZONTAL_PIXELS), 512);
 
 	blip_set_rates(core1->getAudioChannel(core1, 0), core1->frequency(core1), 32768);
 	blip_set_rates(core1->getAudioChannel(core1, 1), core1->frequency(core1), 32768);
@@ -565,6 +548,8 @@ bool retro_load_game(const struct retro_game_info* game)
 	core3->loadSave(core3, save);
 	core4->loadROM(core4, rom);
 	core4->loadSave(core4, save);
+	gba1 = core1->board;
+	GBASIOInit(&gba1->sio);
 
 #ifdef M_CORE_GBA
 	if (core1->platform(core1) == PLATFORM_GBA) {
