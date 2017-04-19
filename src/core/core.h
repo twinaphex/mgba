@@ -106,7 +106,7 @@ struct mCore {
 	uint32_t (*busRead32)(struct mCore*, uint32_t address);
 
 	void (*busWrite8)(struct mCore*, uint32_t address, uint8_t);
-void (*busWrite16)(struct mCore*, uint32_t address, uint16_t);
+	void (*busWrite16)(struct mCore*, uint32_t address, uint16_t);
 	void (*busWrite32)(struct mCore*, uint32_t address, uint32_t);
 
 	uint32_t (*rawRead8)(struct mCore*, uint32_t address, int segment);
