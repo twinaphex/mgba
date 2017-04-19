@@ -7,6 +7,7 @@
 
 #include <QApplication>
 #include <QResizeEvent>
+#include <QTimer>
 
 extern "C" {
 #include "core/core.h"
@@ -75,7 +76,11 @@ void DisplayGL::startDrawing(mCoreThread* thread) {
 
 	lockAspectRatio(isAspectRatioLocked());
 	filter(isFiltered());
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+	messagePainter()->resize(size(), isAspectRatioLocked(), devicePixelRatioF());
+#else
 	messagePainter()->resize(size(), isAspectRatioLocked(), devicePixelRatio());
+#endif
 	resizePainter();
 }
 
@@ -315,6 +320,16 @@ void PainterGL::draw() {
 	if (m_queue.isEmpty() || !mCoreThreadIsActive(m_context)) {
 		return;
 	}
+	if (!m_delayTimer.isValid()) {
+		m_delayTimer.start();
+	} else if (m_delayTimer.elapsed() < 16) {
+		QMetaObject::invokeMethod(this, "draw", Qt::QueuedConnection);
+		QThread::usleep(500);
+		return;
+	} else {
+		m_delayTimer.restart();
+	}
+
 	if (mCoreSyncWaitFrameStart(&m_context->sync) || !m_queue.isEmpty()) {
 		dequeue();
 		mCoreSyncWaitFrameEnd(&m_context->sync);
@@ -362,7 +377,11 @@ void PainterGL::unpause() {
 
 void PainterGL::performDraw() {
 	m_painter.beginNativePainting();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+	float r = m_gl->devicePixelRatioF();
+#else
 	float r = m_gl->devicePixelRatio();
+#endif
 	m_backend->resized(m_backend, m_size.width() * r, m_size.height() * r);
 	m_backend->drawFrame(m_backend);
 	m_painter.endNativePainting();
