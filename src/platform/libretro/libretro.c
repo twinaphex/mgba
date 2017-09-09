@@ -20,6 +20,7 @@
 #include <mgba/gba/core.h>
 #include <mgba/gba/interface.h>
 #include <mgba/internal/gba/gba.h>
+#include <mgba/internal/gba/bios.h>
 #endif
 #include <mgba-util/circle-buffer.h>
 #include <mgba-util/memory.h>
