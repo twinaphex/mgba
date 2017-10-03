@@ -21,6 +21,10 @@
 #include <mgba-util/memory.h>
 #include <mgba-util/vfs.h>
 
+#ifdef USE_ELF
+#include <mgba-util/elf-read.h>
+#endif
+
 mLOG_DEFINE_CATEGORY(GBA, "GBA", "gba");
 mLOG_DEFINE_CATEGORY(GBA_DEBUG, "GBA Debug", "gba.debug");
 
@@ -42,7 +46,7 @@ static bool _setSoftwareBreakpoint(struct ARMDebugger*, uint32_t address, enum E
 static bool _clearSoftwareBreakpoint(struct ARMDebugger*, uint32_t address, enum ExecutionMode mode, uint32_t opcode);
 
 
-#if defined(_3DS) && !defined(__LIBRETRO__)
+#ifdef FIXED_ROM_BUFFER
 extern uint32_t* romBuffer;
 extern size_t romBufferSize;
 #endif
@@ -120,7 +124,7 @@ void GBAUnloadROM(struct GBA* gba) {
 	}
 
 	if (gba->romVf) {
-#ifndef _3DS
+#ifndef FIXED_ROM_BUFFER
 		gba->romVf->unmap(gba->romVf, gba->memory.rom, gba->pristineRomSize);
 #endif
 		gba->romVf->close(gba->romVf);
@@ -203,6 +207,10 @@ void GBAReset(struct ARMCore* cpu) {
 
 	gba->debug = false;
 	memset(gba->debugString, 0, sizeof(gba->debugString));
+
+	if (!gba->romVf && gba->memory.rom) {
+		GBASkipBIOS(gba);
+	}
 }
 
 void GBASkipBIOS(struct GBA* gba) {
@@ -288,6 +296,29 @@ void GBADetachDebugger(struct GBA* gba) {
 }
 #endif
 
+bool GBALoadNull(struct GBA* gba) {
+	GBAUnloadROM(gba);
+	gba->romVf = NULL;
+	gba->pristineRomSize = 0;
+	gba->memory.wram = anonymousMemoryMap(SIZE_WORKING_RAM);
+#ifndef FIXED_ROM_BUFFER
+	gba->memory.rom = anonymousMemoryMap(SIZE_CART0);
+#else
+	gba->memory.rom = romBuffer;
+#endif
+	gba->isPristine = false;
+	gba->yankedRomSize = 0;
+	gba->memory.romSize = SIZE_CART0;
+	gba->memory.romMask = SIZE_CART0 - 1;
+	gba->memory.mirroring = false;
+	gba->romCrc32 = 0;
+
+	if (gba->cpu) {
+		gba->cpu->memory.setActiveRegion(gba->cpu, gba->cpu->gprs[ARM_PC]);
+	}
+	return true;
+}
+
 bool GBALoadMB(struct GBA* gba, struct VFile* vf) {
 	GBAUnloadROM(gba);
 	gba->romVf = vf;
@@ -326,7 +357,7 @@ bool GBALoadROM(struct GBA* gba, struct VFile* vf) {
 		gba->pristineRomSize = SIZE_CART0;
 	}
 	gba->isPristine = true;
-#if defined(_3DS) && !defined(__LIBRETRO__)
+#ifdef FIXED_ROM_BUFFER
 	if (gba->pristineRomSize <= romBufferSize) {
 		gba->memory.rom = romBuffer;
 		vf->read(vf, romBuffer, gba->pristineRomSize);
@@ -345,6 +376,16 @@ bool GBALoadROM(struct GBA* gba, struct VFile* vf) {
 	gba->romCrc32 = doCrc32(gba->memory.rom, gba->memory.romSize);
 	GBAHardwareInit(&gba->memory.hw, &((uint16_t*) gba->memory.rom)[GPIO_REG_DATA >> 1]);
 	GBAVFameDetect(&gba->memory.vfame, gba->memory.rom, gba->memory.romSize);
+	if (popcount32(gba->memory.romSize) != 1) {
+		// This ROM is either a bad dump or homebrew. Emulate flash cart behavior.
+#ifndef FIXED_ROM_BUFFER
+		void* newRom = anonymousMemoryMap(SIZE_CART0);
+		memcpy(newRom, gba->memory.rom, gba->pristineRomSize);
+		gba->memory.rom = newRom;
+#endif
+		gba->memory.romSize = SIZE_CART0;
+		gba->isPristine = false;
+	}
 	if (gba->cpu && gba->memory.activeRegion >= REGION_CART0) {
 		gba->cpu->memory.setActiveRegion(gba->cpu, gba->cpu->gprs[ARM_PC]);
 	}
@@ -400,7 +441,7 @@ void GBAApplyPatch(struct GBA* gba, struct Patch* patch) {
 		return;
 	}
 	if (gba->romVf) {
-#ifndef _3DS
+#ifndef FIXED_ROM_BUFFER
 		gba->romVf->unmap(gba->romVf, gba->memory.rom, gba->pristineRomSize);
 #endif
 		gba->romVf->close(gba->romVf);
@@ -475,6 +516,17 @@ void GBADebug(struct GBA* gba, uint16_t flags) {
 }
 
 bool GBAIsROM(struct VFile* vf) {
+#ifdef USE_ELF
+	struct ELF* elf = ELFOpen(vf);
+	if (elf) {
+		uint32_t entry = ELFEntry(elf);
+		bool isGBA = true;
+		isGBA = isGBA && ELFMachine(elf) == EM_ARM;
+		isGBA = isGBA && (entry == BASE_CART0 || entry == BASE_WORKING_RAM);
+		ELFClose(elf);
+		return isGBA;
+	}
+#endif
 	if (!vf) {
 		return false;
 	}
@@ -495,6 +547,14 @@ bool GBAIsMB(struct VFile* vf) {
 	if (!GBAIsROM(vf)) {
 		return false;
 	}
+#ifdef USE_ELF
+	struct ELF* elf = ELFOpen(vf);
+	if (elf) {
+		bool isMB = ELFEntry(elf) == BASE_WORKING_RAM;
+		ELFClose(elf);
+		return isMB;
+	}
+#endif
 	if (vf->size(vf) > SIZE_WORKING_RAM) {
 		return false;
 	}

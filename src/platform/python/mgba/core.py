@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 from ._pylib import ffi, lib
-from . import tile
+from . import tile, createCallback
 from cached_property import cached_property
 
 def find(path):
@@ -38,6 +38,58 @@ def needsReset(f):
         return f(self, *args, **kwargs)
     return wrapper
 
+def protected(f):
+    def wrapper(self, *args, **kwargs):
+        if self._protected:
+            raise RuntimeError("Core is protected")
+        return f(self, *args, **kwargs)
+    return wrapper
+
+@ffi.def_extern()
+def _mCorePythonCallbacksVideoFrameStarted(user):
+    context = ffi.from_handle(user)
+    context._videoFrameStarted()
+
+@ffi.def_extern()
+def _mCorePythonCallbacksVideoFrameEnded(user):
+    context = ffi.from_handle(user)
+    context._videoFrameEnded()
+
+@ffi.def_extern()
+def _mCorePythonCallbacksCoreCrashed(user):
+    context = ffi.from_handle(user)
+    context._coreCrashed()
+
+@ffi.def_extern()
+def _mCorePythonCallbacksSleep(user):
+    context = ffi.from_handle(user)
+    context._sleep()
+
+class CoreCallbacks(object):
+    def __init__(self):
+        self._handle = ffi.new_handle(self)
+        self.videoFrameStarted = []
+        self.videoFrameEnded = []
+        self.coreCrashed = []
+        self.sleep = []
+        self.context = lib.mCorePythonCallbackCreate(self._handle)
+
+    def _videoFrameStarted(self):
+        for cb in self.videoFrameStarted:
+            cb()
+
+    def _videoFrameEnded(self):
+        for cb in self.videoFrameEnded:
+            cb()
+
+    def _coreCrashed(self):
+        for cb in self.coreCrashed:
+            cb()
+
+    def _sleep(self):
+        for cb in self.sleep:
+            cb()
+
 class Core(object):
     if hasattr(lib, 'PLATFORM_GBA'):
         PLATFORM_GBA = lib.PLATFORM_GBA
@@ -48,17 +100,50 @@ class Core(object):
     def __init__(self, native):
         self._core = native
         self._wasReset = False
+        self._protected = False
+        self._callbacks = CoreCallbacks()
+        self._core.addCoreCallbacks(self._core, self._callbacks.context)
+        self.config = Config(ffi.addressof(native.config))
+
+    def __del__(self):
+        self._wasReset = False
+
+    @cached_property
+    def graphicsCache(self):
+        if not self._wasReset:
+            raise RuntimeError("Core must be reset first")
+        return tile.CacheSet(self)
 
     @cached_property
     def tiles(self):
-        return tile.TileView(self)
+        t = []
+        ts = ffi.addressof(self.graphicsCache.cache.tiles)
+        for i in range(lib.mTileCacheSetSize(ts)):
+            t.append(tile.TileView(lib.mTileCacheSetGetPointer(ts, i)))
+        return t
+
+    @cached_property
+    def maps(self):
+        m = []
+        ms = ffi.addressof(self.graphicsCache.cache.maps)
+        for i in range(lib.mMapCacheSetSize(ms)):
+            m.append(tile.MapView(lib.mMapCacheSetGetPointer(ms, i)))
+        return m
 
     @classmethod
     def _init(cls, native):
         core = ffi.gc(native, native.deinit)
         success = bool(core.init(core))
+        lib.mCoreInitConfig(core, ffi.NULL)
         if not success:
             raise RuntimeError("Failed to initialize core")
+        return cls._detect(core)
+
+    def _deinit(self):
+        self._core.deinit(self._core)
+
+    @classmethod
+    def _detect(cls, core):
         if hasattr(cls, 'PLATFORM_GBA') and core.platform(core) == cls.PLATFORM_GBA:
             from .gba import GBA
             return GBA(core)
@@ -66,9 +151,6 @@ class Core(object):
             from .gb import GB
             return GB(core)
         return Core(core)
-
-    def _deinit(self):
-        self._core.deinit(self._core)
 
     def loadFile(self, path):
         return bool(lib.mCoreLoadFile(self._core, path.encode('UTF-8')))
@@ -87,6 +169,9 @@ class Core(object):
 
     def loadPatch(self, vf):
         return bool(self._core.loadPatch(self._core, vf.handle))
+
+    def loadConfig(self, config):
+        lib.mCoreLoadForeignConfig(self._core, config._native)
 
     def autoloadSave(self):
         return bool(lib.mCoreAutoloadSave(self._core))
@@ -111,10 +196,12 @@ class Core(object):
         self._wasReset = True
 
     @needsReset
+    @protected
     def runFrame(self):
         self._core.runFrame(self._core)
 
     @needsReset
+    @protected
     def runLoop(self):
         self._core.runLoop(self._core)
 
@@ -140,22 +227,87 @@ class Core(object):
     def clearKeys(self, *args, **kwargs):
         self._core.clearKeys(self._core, self._keysToInt(*args, **kwargs))
 
+    @property
     @needsReset
     def frameCounter(self):
         return self._core.frameCounter(self._core)
 
+    @property
     def frameCycles(self):
         return self._core.frameCycles(self._core)
 
+    @property
     def frequency(self):
         return self._core.frequency(self._core)
 
-    def getGameTitle(self):
+    @property
+    def gameTitle(self):
         title = ffi.new("char[16]")
         self._core.getGameTitle(self._core, title)
         return ffi.string(title, 16).decode("ascii")
 
-    def getGameCode(self):
+    @property
+    def gameCode(self):
         code = ffi.new("char[12]")
         self._core.getGameCode(self._core, code)
         return ffi.string(code, 12).decode("ascii")
+
+    def addFrameCallback(self, cb):
+        self._callbacks.videoFrameEnded.append(cb)
+
+class ICoreOwner(object):
+    def claim(self):
+        raise NotImplementedError
+
+    def release(self):
+        raise NotImplementedError
+
+    def __enter__(self):
+        self.core = self.claim()
+        self.core._protected = True
+        return self.core
+
+    def __exit__(self, type, value, traceback):
+        self.core._protected = False
+        self.release()
+
+class IRunner(object):
+    def pause(self):
+        raise NotImplementedError
+
+    def unpause(self):
+        raise NotImplementedError
+
+    def useCore(self):
+        raise NotImplementedError
+
+    def isRunning(self):
+        raise NotImplementedError
+
+    def isPaused(self):
+        raise NotImplementedError
+
+class Config(object):
+    def __init__(self, native=None, port=None, defaults={}):
+        if not native:
+            self._port = ffi.NULL
+            if port:
+                self._port = ffi.new("char[]", port.encode("UTF-8"))
+            native = ffi.gc(ffi.new("struct mCoreConfig*"), lib.mCoreConfigDeinit)
+            lib.mCoreConfigInit(native, self._port)
+        self._native = native
+        for key, value in defaults.items():
+            if isinstance(value, bool):
+                value = int(value)
+            lib.mCoreConfigSetDefaultValue(self._native, ffi.new("char[]", key.encode("UTF-8")), ffi.new("char[]", str(value).encode("UTF-8")))
+
+    def __getitem__(self, key):
+        string = lib.mCoreConfigGetValue(self._native, ffi.new("char[]", key.encode("UTF-8")))
+        if not string:
+            return None
+        return ffi.string(string)
+
+    def __setitem__(self, key, value):
+        if isinstance(value, bool):
+            value = int(value)
+        lib.mCoreConfigSetValue(self._native, ffi.new("char[]", key.encode("UTF-8")), ffi.new("char[]", str(value).encode("UTF-8")))

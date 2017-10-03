@@ -8,6 +8,7 @@
 #include <mgba/core/core.h>
 #include <mgba/core/log.h>
 #include <mgba/internal/arm/debugger/debugger.h>
+#include <mgba/internal/debugger/symbols.h>
 #include <mgba/internal/gba/cheats.h>
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/io.h>
@@ -20,6 +21,9 @@
 #include <mgba/internal/gba/renderers/video-software.h>
 #include <mgba/internal/gba/savedata.h>
 #include <mgba/internal/gba/serialize.h>
+#ifdef USE_ELF
+#include <mgba-util/elf-read.h>
+#endif
 #include <mgba-util/memory.h>
 #include <mgba-util/patch.h>
 #include <mgba-util/vfs.h>
@@ -256,6 +260,7 @@ static void _GBACoreSetVideoBuffer(struct mCore* core, color_t* buffer, size_t s
 	struct GBACore* gbacore = (struct GBACore*) core;
 	gbacore->renderer.outputBuffer = buffer;
 	gbacore->renderer.outputBufferStride = stride;
+	memset(gbacore->renderer.scanlineDirty, 0xFFFFFFFF, sizeof(gbacore->renderer.scanlineDirty));
 }
 
 static void _GBACoreGetPixels(struct mCore* core, const void** buffer, size_t* stride) {
@@ -309,6 +314,15 @@ static void _GBACoreSetAVStream(struct mCore* core, struct mAVStream* stream) {
 }
 
 static bool _GBACoreLoadROM(struct mCore* core, struct VFile* vf) {
+#ifdef USE_ELF
+	struct ELF* elf = ELFOpen(vf);
+	if (elf) {
+		GBALoadNull(core->board);
+		bool success = mCoreLoadELF(core, elf);
+		ELFClose(elf);
+		return success;
+	}
+#endif
 	if (GBAIsMB(vf)) {
 		return GBALoadMB(core->board, vf);
 	}
@@ -383,20 +397,8 @@ static void _GBACoreReset(struct mCore* core) {
 		GBAVideoAssociateRenderer(&gba->video, renderer);
 	}
 
-	struct GBACartridgeOverride override;
-	const struct GBACartridge* cart = (const struct GBACartridge*) gba->memory.rom;
-	if (cart) {
-		memcpy(override.id, &cart->id, sizeof(override.id));
+	GBAOverrideApplyDefaults(gba, gbacore->overrides);
 
-		if (!strncmp("pokemon red version", &((const char*) gba->memory.rom)[0x108], 20) && gba->romCrc32 != 0xDD88761C) {
-			// Enable FLASH1M and RTC on Pokémon FireRed ROM hacks
-			override.savetype = SAVEDATA_FLASH1M;
-			override.hardware = HW_RTC;
-			GBAOverrideApply(gba, &override);
-		} else if (GBAOverrideFind(gbacore->overrides, &override)) {
-			GBAOverrideApply(gba, &override);
-		}
-	}
 #if !defined(MINIMAL_CORE) || MINIMAL_CORE < 2
 	if (!gba->biosVf && core->opts.useBios) {
 		struct VFile* bios = NULL;
@@ -702,7 +704,27 @@ static void _GBACoreDetachDebugger(struct mCore* core) {
 }
 
 static void _GBACoreLoadSymbols(struct mCore* core, struct VFile* vf) {
-	// TODO
+#ifdef USE_ELF
+	bool closeAfter = false;
+	core->symbolTable = mDebuggerSymbolTableCreate();
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 2
+	if (!vf) {
+		closeAfter = true;
+		vf = mDirectorySetOpenSuffix(&core->dirs, core->dirs.base, ".elf", O_RDONLY);
+	}
+#endif
+	if (!vf) {
+		return;
+	}
+	struct ELF* elf = ELFOpen(vf);
+	if (elf) {
+		mCoreLoadELFSymbols(core->symbolTable, elf);
+		ELFClose(elf);
+	}
+	if (closeAfter) {
+		vf->close(vf);
+	}
+#endif
 }
 #endif
 

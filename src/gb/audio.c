@@ -153,6 +153,10 @@ void GBAudioReset(struct GBAudio* audio) {
 	audio->playingCh2 = false;
 	audio->playingCh3 = false;
 	audio->playingCh4 = false;
+	if (audio->p && (audio->p->model == GB_MODEL_DMG || audio->p->model == GB_MODEL_CGB)) {
+		audio->playingCh1 = true;
+		*audio->nr52 |= 0x01;
+	}
 }
 
 void GBAudioResizeBuffer(struct GBAudio* audio, size_t samples) {
@@ -620,8 +624,9 @@ void GBAudioSamplePSG(struct GBAudio* audio, int16_t* left, int16_t* right) {
 		}
 	}
 
-	*left = sampleLeft * (1 + audio->volumeLeft);
-	*right = sampleRight * (1 + audio->volumeRight);
+	int dcOffset = audio->style == GB_AUDIO_GBA ? 0 : 0x1FC;
+	*left = (sampleLeft - dcOffset) * (1 + audio->volumeLeft);
+	*right = (sampleRight - dcOffset) * (1 + audio->volumeRight);
 }
 
 static void _sample(struct mTiming* timing, void* user, uint32_t cyclesLate) {
@@ -709,7 +714,7 @@ bool _writeEnvelope(struct GBAudioEnvelope* envelope, uint8_t value, enum GBAudi
 }
 
 static void _updateSquareSample(struct GBAudioSquareChannel* ch) {
-	ch->sample = (ch->control.hi * 2 - 1) * ch->envelope.currentVolume * 0x8;
+	ch->sample = ch->control.hi * ch->envelope.currentVolume * 0x8;
 }
 
 static int32_t _updateSquareChannel(struct GBAudioSquareChannel* ch) {
@@ -860,8 +865,7 @@ static void _updateChannel3(struct mTiming* timing, void* user, uint32_t cyclesL
 		ch->sample = bitsCarry >> 4;
 		break;
 	}
-	ch->sample -= 8;
-	ch->sample *= volume * 4;
+	ch->sample *= volume * 2;
 	audio->ch3.readable = true;
 	if (audio->style == GB_AUDIO_DMG) {
 		mTimingDeschedule(audio->timing, &audio->ch3Fade);
@@ -888,7 +892,7 @@ static void _updateChannel4(struct mTiming* timing, void* user, uint32_t cyclesL
 
 	do {
 		int lsb = ch->lfsr & 1;
-		ch->sample = lsb * 0x10 - 0x8;
+		ch->sample = lsb * 0x8;
 		ch->sample *= ch->envelope.currentVolume;
 		ch->lfsr >>= 1;
 		ch->lfsr ^= (lsb * 0x60) << (ch->power ? 0 : 8);
@@ -959,6 +963,8 @@ void GBAudioPSGDeserialize(struct GBAudio* audio, const struct GBSerializedPSGSt
 	mTimingSchedule(audio->timing, &audio->frameEvent, when);
 
 	LOAD_32LE(flags, 0, flagsIn);
+	audio->frame = GBSerializedAudioFlagsGetFrame(flags);
+
 	LOAD_32LE(ch1Flags, 0, &state->ch1.envelope);
 	audio->ch1.envelope.currentVolume = GBSerializedAudioFlagsGetCh1Volume(flags);
 	audio->ch1.envelope.dead = GBSerializedAudioFlagsGetCh1Dead(flags);

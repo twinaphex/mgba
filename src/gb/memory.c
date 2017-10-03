@@ -105,6 +105,7 @@ void GBMemoryInit(struct GB* gb) {
 	gb->memory.rtc = NULL;
 	gb->memory.rotation = NULL;
 	gb->memory.rumble = NULL;
+	gb->memory.cam = NULL;
 
 	GBIOInit(gb);
 }
@@ -206,10 +207,14 @@ uint8_t GBLoad8(struct LR35902Core* cpu, uint16_t address) {
 	case GB_REGION_CART_BANK0 + 2:
 	case GB_REGION_CART_BANK0 + 3:
 		return memory->romBase[address & (GB_SIZE_CART_BANK0 - 1)];
-	case GB_REGION_CART_BANK1:
-	case GB_REGION_CART_BANK1 + 1:
 	case GB_REGION_CART_BANK1 + 2:
 	case GB_REGION_CART_BANK1 + 3:
+		if (memory->mbcType == GB_MBC6) {
+			return memory->mbcState.mbc6.romBank1[address & (GB_SIZE_CART_HALFBANK - 1)];
+		}
+		// Fall through
+	case GB_REGION_CART_BANK1:
+	case GB_REGION_CART_BANK1 + 1:
 		return memory->romBank[address & (GB_SIZE_CART_BANK0 - 1)];
 	case GB_REGION_VRAM:
 	case GB_REGION_VRAM + 1:
@@ -291,8 +296,8 @@ void GBStore8(struct LR35902Core* cpu, uint16_t address, int8_t value) {
 			memory->rtcRegs[memory->activeRtcReg] = value;
 		} else if (memory->sramAccess && memory->sram) {
 			memory->sramBank[address & (GB_SIZE_EXTERNAL_RAM - 1)] = value;
-		} else if (memory->mbcType == GB_MBC7) {
-			GBMBC7Write(memory, address, value);
+		} else {
+			memory->mbcWrite(gb, address, value);
 		}
 		gb->sramDirty |= GB_SRAM_DIRT_NEW;
 		return;

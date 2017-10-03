@@ -3,13 +3,16 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#ifndef QGBA_APP_H
-#define QGBA_APP_H
+#pragma once
 
 #include <QApplication>
 #include <QFileDialog>
+#include <QList>
+#include <QObject>
+#include <QString>
 #include <QThread>
 
+#include "CoreManager.h"
 #include "MultiplayerController.h"
 
 struct NoIntroDB;
@@ -70,6 +73,7 @@ private:
 	ConfigController* m_configController;
 	QList<Window*> m_windows;
 	MultiplayerController m_multiplayer;
+	CoreManager m_manager;
 
 	NoIntroDB* m_db = nullptr;
 #ifdef USE_SQLITE3
@@ -78,5 +82,3 @@ private:
 };
 
 }
-
-#endif

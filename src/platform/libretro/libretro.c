@@ -111,8 +111,8 @@ void retro_set_environment(retro_environment_t env) {
 	struct retro_variable vars[] = {
 		{ "mgba_solar_sensor_level", "Solar sensor level; 0|1|2|3|4|5|6|7|8|9|10" },
 		{ "mgba_allow_opposing_directions", "Allow opposing directional input; OFF|ON" },
-		{ "mgba_use_bios", "Use BIOS file if found; ON|OFF" },
-		{ "mgba_skip_bios", "Skip BIOS intro; OFF|ON" },
+		{ "mgba_use_bios", "Use BIOS file if found (requires restart); ON|OFF" },
+		{ "mgba_skip_bios", "Skip BIOS intro (requires restart); OFF|ON" },
 		{ "mgba_idle_optimization", "Idle loop removal; Remove Known|Detect and Remove|Don't Remove" },
 		{ 0, 0 }
 	};
@@ -460,11 +460,7 @@ bool retro_load_game(const struct retro_game_info* game)
 	core->init(core);
 	core->setAVStream(core, &stream);
 
-#ifdef _3DS
-	outputBuffer = linearMemAlign(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL, 0x80);
-#else
-	outputBuffer = malloc(256 * VIDEO_VERTICAL_PIXELS * BYTES_PER_PIXEL);
-#endif
+	outputBuffer = malloc(256 * 224 * BYTES_PER_PIXEL);
 	core->setVideoBuffer(core, outputBuffer, 256);
 
 	core->setAudioBufferSize(core, SAMPLES);
@@ -614,26 +610,26 @@ size_t retro_get_memory_size(unsigned id) {
 #ifdef M_CORE_GBA
 		if (core->platform(core) == PLATFORM_GBA) {
 			switch (((struct GBA*) core->board)->memory.savedata.type) {
-			case SAVEDATA_AUTODETECT:
-				return SIZE_CART_FLASH1M;
-			default:
-				return GBASavedataSize(&((struct GBA*) core->board)->memory.savedata);
+				case SAVEDATA_AUTODETECT:
+					return SIZE_CART_FLASH1M;
+				default:
+					return GBASavedataSize(&((struct GBA*) core->board)->memory.savedata);
 			}
-		}
 #endif
 #ifdef M_CORE_GB
-		if (core->platform(core) == PLATFORM_GB) {
-			return ((struct GB*) core->board)->sramSize;
-		}
+			if (core->platform(core) == PLATFORM_GB) {
+				return ((struct GB*) core->board)->sramSize;
+			}
 #endif
+		}
+		if (id == RETRO_MEMORY_SYSTEM_RAM) {
+			return SIZE_WORKING_RAM;
+		}
+		if (id == RETRO_MEMORY_VIDEO_RAM) {
+			return SIZE_VRAM;
+		}
+		return 0;
 	}
-	if (id == RETRO_MEMORY_SYSTEM_RAM) {
-		return SIZE_WORKING_RAM;
-	}
-	if (id == RETRO_MEMORY_VIDEO_RAM) {
-		return SIZE_VRAM;
-	}
-	return 0;
 }
 
 void GBARetroLog(struct mLogger* logger, int category, enum mLogLevel level, const char* format, va_list args) {
