@@ -88,6 +88,8 @@ static unsigned imcapWidth;
 static unsigned imcapHeight;
 static size_t camStride;
 
+static int RETRO_SOUND_SAMPLE_RATE = 44100;
+
 #ifdef HAVE_LIBNX
 static u32 hidSixAxisHandles[4];
 #endif
@@ -287,7 +289,6 @@ static void _initColorCorrection(void) {
 }
 
 static void _loadColorCorrectionSettings(void) {
-
 	struct retro_variable var;
 	unsigned oldCcType = ccType;
 	ccType = 0;
@@ -313,6 +314,27 @@ static void _loadColorCorrectionSettings(void) {
 }
 
 #endif
+
+static void _loadAudioSampleRate(void) {
+	struct retro_variable var;
+
+	var.key = "mgba_sound_sample_rate";
+	var.value = 0;
+	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+		int old_value = RETRO_SOUND_SAMPLE_RATE;
+
+		RETRO_SOUND_SAMPLE_RATE = atoi(var.value);
+
+		if ((old_value != RETRO_SOUND_SAMPLE_RATE) && (core->getAudioBufferSize(core) == 1)) {
+			blip_set_rates(core->getAudioChannel(core, 0), core->frequency(core), RETRO_SOUND_SAMPLE_RATE);
+			blip_set_rates(core->getAudioChannel(core, 1), core->frequency(core), RETRO_SOUND_SAMPLE_RATE);
+
+			struct retro_system_av_info system_av_info;
+			retro_get_system_av_info(&system_av_info);
+			environCallback(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &system_av_info);
+		}
+	}
+}
 
 static void _reloadSettings(void) {
 	struct mCoreOptions opts = {
@@ -453,7 +475,7 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
 
 	info->geometry.aspect_ratio = width / (double) height;
 	info->timing.fps = core->frequency(core) / (float) core->frameCycles(core);
-	info->timing.sample_rate = 32768;
+	info->timing.sample_rate = RETRO_SOUND_SAMPLE_RATE;
 }
 
 void retro_init(void) {
@@ -634,6 +656,8 @@ void retro_run(void) {
 #if defined(COLOR_16_BIT) && defined(COLOR_5_6_5)
 		_loadColorCorrectionSettings();
 #endif
+
+		_loadAudioSampleRate();
 	}
 
 	keys = 0;
@@ -648,8 +672,8 @@ void retro_run(void) {
 	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) << 8;
 	keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) << 9;
    
-   //turbo keys
-   keys |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
+	//turbo keys
+	keys |= cycleturbo(RDKEYP1(X),RDKEYP1(Y),RDKEYP1(L2),RDKEYP1(R2));
    
 	core->setKeys(core, keys);
 
@@ -888,10 +912,10 @@ bool retro_load_game(const struct retro_game_info* game) {
 	memset(outputBuffer, 0xFF, size);
 	core->setVideoBuffer(core, outputBuffer, 256);
 
-	core->setAudioBufferSize(core, SAMPLES);
-
-	blip_set_rates(core->getAudioChannel(core, 0), core->frequency(core), 32768);
-	blip_set_rates(core->getAudioChannel(core, 1), core->frequency(core), 32768);
+	_loadAudioSampleRate();
+	core->setAudioBufferSize(core, 1);
+	blip_set_rates(core->getAudioChannel(core, 0), core->frequency(core), RETRO_SOUND_SAMPLE_RATE);
+	blip_set_rates(core->getAudioChannel(core, 1), core->frequency(core), RETRO_SOUND_SAMPLE_RATE);
 
 	core->setPeripheral(core, mPERIPH_RUMBLE, &rumble);
 	core->setPeripheral(core, mPERIPH_ROTATION, &rotation);
@@ -1187,9 +1211,17 @@ void GBARetroLog(struct mLogger* logger, int category, enum mLogLevel level, con
 static void _postAudioBuffer(struct mAVStream* stream, blip_t* left, blip_t* right) {
 	UNUSED(stream);
 	int16_t samples[SAMPLES * 2];
-	blip_read_samples(left, samples, SAMPLES, true);
-	blip_read_samples(right, samples + 1, SAMPLES, true);
-	audioCallback(samples, SAMPLES);
+
+	while(1) {
+		int total;
+		total = blip_read_samples(left, samples, SAMPLES, true);
+		total = blip_read_samples(right, samples + 1, SAMPLES, true);
+		if (!total) break;
+
+		for (int count = 0; count < total; ) {
+			count += audioCallback(samples + count*2, total - count);
+		}
+	}
 }
 
 static void _setRumble(struct mRumble* rumble, int enable) {
