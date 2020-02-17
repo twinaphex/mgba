@@ -66,9 +66,10 @@ mLOG_DECLARE_CATEGORY(GBA_STATE);
  * 0x0018C - 0x001AB: Audio FIFO 1
  * 0x001AC - 0x001CB: Audio FIFO 2
  * 0x001CC - 0x001DF: Audio miscellaneous state
- * | 0x001CC - 0x001D3: Reserved
+ * | 0x001CC - 0x001CF: FIFO 1 size
+ * | 0x001D0 - 0x001D3: Reserved
  * | 0x001D4 - 0x001D7: Next sample
- * | 0x001D8 - 0x001DB: FIFO size
+ * | 0x001D8 - 0x001DB: FIFO 2 size
  * | TODO: Fix this, they're in big-endian order, but field is little-endian
  * | 0x001DC - 0x001DC: Channel 1 envelope state
  *   | bits 0 - 3: Current volume
@@ -91,7 +92,8 @@ mLOG_DECLARE_CATEGORY(GBA_STATE);
  *   | bits 6 - 7: Reserved
  * 0x001E0 - 0x001FF: Video miscellaneous state
  * | 0x001E0 - 0x001E3: Next event
- * | 0x001E4 - 0x001FB: Reserved
+ * | 0x001E4 - 0x001F7: Reserved
+ * | 0x001F8 - 0x001FB: Miscellaneous flags
  * | 0x001FC - 0x001FF: Frame counter
  * 0x00200 - 0x00213: Timer 0
  * | 0x00200 - 0x00201: Reload value
@@ -170,7 +172,8 @@ mLOG_DECLARE_CATEGORY(GBA_STATE);
  *   | bits 9 - 23: Reserved
  * 0x002C4 - 0x002C7: Game Boy Player next event
  * 0x002C8 - 0x002CB: Current DMA transfer word
- * 0x002CC - 0x002DF: Reserved (leave zero)
+ * 0x002CC - 0x002CF: Last DMA transfer PC
+ * 0x002D0 - 0x002DF: Reserved (leave zero)
  * 0x002E0 - 0x002EF: Savedata state
  * | 0x002E0 - 0x002E0: Savedata type
  * | 0x002E1 - 0x002E1: Savedata command (see savedata.h)
@@ -190,8 +193,7 @@ mLOG_DECLARE_CATEGORY(GBA_STATE);
  * | 0x002F4 - 0x002F7: GBA BIOS bus prefetch
  * | 0x002F8 - 0x002FB: CPU prefecth (decode slot)
  * | 0x002FC - 0x002FF: CPU prefetch (fetch slot)
- * 0x00300 - 0x00303: Associated movie stream ID for record/replay (or 0 if no stream)
- * 0x00304 - 0x00317: Savestate creation time (usec since 1970)
+ * 0x00300 - 0x00317: Reserved (leave zero)
  * 0x00318 - 0x0031B: Last prefetched program counter
  * 0x0031C - 0x0031F: Miscellaneous flags
  *  | bit 0: Is CPU halted?
@@ -207,6 +209,9 @@ mLOG_DECLARE_CATEGORY(GBA_STATE);
  * 0x21000 - 0x60FFF: WRAM
  * Total size: 0x61000 (397,312) bytes
  */
+
+DECL_BITFIELD(GBASerializedVideoFlags, uint32_t);
+DECL_BITS(GBASerializedVideoFlags, Mode, 0, 2);
 
 DECL_BITFIELD(GBASerializedHWFlags1, uint16_t);
 DECL_BIT(GBASerializedHWFlags1, ReadWrite, 0);
@@ -256,15 +261,17 @@ struct GBASerializedState {
 		struct GBSerializedPSGState psg;
 		uint8_t fifoA[32];
 		uint8_t fifoB[32];
-		int32_t reserved[2];
+		uint32_t fifoSizeA;
+		int32_t reserved;
 		int32_t nextSample;
-		uint32_t fifoSize;
+		uint32_t fifoSizeB;
 		GBSerializedAudioFlags flags;
 	} audio;
 
 	struct {
 		int32_t nextEvent;
-		int32_t reserved[6];
+		int32_t reserved[5];
+		GBASerializedVideoFlags flags;
 		int32_t frameCounter;
 	} video;
 
@@ -300,8 +307,9 @@ struct GBASerializedState {
 	} hw;
 
 	uint32_t dmaTransferRegister;
+	uint32_t dmaBlockPC;
 
-	uint32_t reservedHardware[5];
+	uint32_t reservedHardware[4];
 
 	struct {
 		uint8_t type;
@@ -318,8 +326,7 @@ struct GBASerializedState {
 	uint32_t biosPrefetch;
 	uint32_t cpuPrefetch[2];
 
-	uint32_t associatedStreamId;
-	uint32_t reservedRr[5];
+	uint32_t reservedCpu[6];
 
 	uint32_t lastPrefetchedPc;
 	GBASerializedMiscFlags miscFlags;

@@ -91,7 +91,6 @@ struct GBA {
 	struct mRTCSource* rtcSource;
 	struct mRumble* rumble;
 
-	struct GBARRContext* rr;
 	bool isPristine;
 	size_t pristineRomSize;
 	size_t yankedRomSize;
@@ -109,6 +108,7 @@ struct GBA {
 	bool haltPending;
 	bool cpuBlocked;
 	bool earlyExit;
+	uint32_t dmaPC;
 	int idleDetectionStep;
 	int idleDetectionFailures;
 	int32_t cachedRegisters[16];
