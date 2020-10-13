@@ -77,6 +77,12 @@ static const struct GBACartridgeOverride _overrides[] = {
 	// Legendz - Sign of Nekuromu
 	{ "BLVJ", SAVEDATA_FLASH512, HW_RTC, IDLE_LOOP_NONE, false },
 
+	// Mario & Luigi Superstar Saga
+	{ "A88E", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
+	{ "A88J", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
+	{ "A88P", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
+	{ "A88U", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
+
 	// Mega Man Battle Network
 	{ "AREE", SAVEDATA_SRAM, HW_NONE, 0x800032E, false },
 
@@ -153,8 +159,17 @@ static const struct GBACartridgeOverride _overrides[] = {
 	// Sennen Kazoku
 	{ "BKAJ", SAVEDATA_FLASH1M, HW_RTC, IDLE_LOOP_NONE, false },
 
+	// Shikakui Atama o Maruku Suru Advance: Kanji, Keisan
+	{ "B4KJ", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
+
+	// Shikakui Atama o Maruku Suru Advance: Kokugo, Sansuu, Shakai, Rika
+	{ "B4RJ", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
+
 	// Shin Bokura no Taiyou: Gyakushuu no Sabata
 	{ "U33J", SAVEDATA_EEPROM, HW_RTC | HW_LIGHT_SENSOR, IDLE_LOOP_NONE, false },
+
+	// Summon Night Craft Sword Monogatari: Hajimari no Ishi
+	{ "B3CJ", SAVEDATA_AUTODETECT, HW_GB_PLAYER_DETECTION, IDLE_LOOP_NONE, false },
 
 	// Super Mario Advance 2
 	{ "AA2J", SAVEDATA_EEPROM, HW_NONE, 0x800052E, false },
@@ -167,9 +182,9 @@ static const struct GBACartridgeOverride _overrides[] = {
 	{ "A3AP", SAVEDATA_EEPROM, HW_NONE, 0x8002B9C, false },
 
 	// Super Mario Advance 4
-	{ "AX4J", SAVEDATA_FLASH1M, HW_NONE, 0x800072A, false },
-	{ "AX4E", SAVEDATA_FLASH1M, HW_NONE, 0x800072A, false },
-	{ "AX4P", SAVEDATA_FLASH1M, HW_NONE, 0x800072A, false },
+	{ "AX4J", SAVEDATA_FLASH1M, HW_GB_PLAYER_DETECTION, 0x800072A, false },
+	{ "AX4E", SAVEDATA_FLASH1M, HW_GB_PLAYER_DETECTION, 0x800072A, false },
+	{ "AX4P", SAVEDATA_FLASH1M, HW_GB_PLAYER_DETECTION, 0x800072A, false },
 
 	// Super Monkey Ball Jr.
 	{ "ALUE", SAVEDATA_EEPROM, HW_NONE, IDLE_LOOP_NONE, false },
