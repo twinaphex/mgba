@@ -139,7 +139,44 @@ int gettimeofday(struct timeval* tv, void* unused);
 
 #if defined __BIG_ENDIAN__
 #define LOAD_32BE(DEST, ADDR, ARR) DEST = *(uint32_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))
-#if defined(__PPC__) || defined(__POWERPC__)
+#if defined (__CELLOS_LV2__)
+#define LOAD_64LE(DEST, ADDR, ARR) { \
+    typedef  struct {char a[8];} doublewordsize; \
+	doublewordsize *ptrp = (doublewordsize*)(void*)((uint64_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))); \
+    __asm__ ("ldbrx %0,%y1" \
+	   : "=r" (DEST) \
+	   : "Z" (*ptrp)); \
+}
+#define LOAD_32LE(DEST, ADDR, ARR) { \
+    typedef  struct {char a[4];} wordsize; \
+	wordsize *ptrp = (wordsize*)(void*)((uint32_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))); \
+    __asm__ ("lwbrx %0,%y1" \
+	   : "=r" (DEST) \
+	   : "Z" (*ptrp)); \
+}
+#define LOAD_16LE(DEST, ADDR, ARR) { \
+    typedef  struct {char a[2];} halfwordsize; \
+	halfwordsize *ptrp = (halfwordsize*)(void*)((uint16_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))); \
+    __asm__ ("lhbrx %0,%y1" \
+	   : "=r" (DEST) \
+	   : "Z" (*ptrp)); \
+}
+#define STORE_64LE(SRC, ADDR, ARR) { \
+	typedef  struct {char a[8];} doublewordsize; \
+	doublewordsize *ptrp = (doublewordsize*)(void*)((uint64_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))); \
+	 __asm__ ("stdbrx %1,%y0" : "=Z" (*ptrp) : "r" (SRC)); \
+}
+#define STORE_32LE(SRC, ADDR, ARR) { \
+	typedef  struct {char a[4];} wordsize; \
+	wordsize *ptrp = (wordsize*)(void*)((uint32_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))); \
+	 __asm__ ("stwbrx %1,%y0" : "=Z" (*ptrp) : "r" (SRC)); \
+}
+#define STORE_16LE(SRC, ADDR, ARR) { \
+	typedef  struct {char a[2];} halfwordsize; \
+	halfwordsize *ptrp = (halfwordsize*)(void*)((uint16_t*) ((uintptr_t) (ARR) + (size_t) (ADDR))); \
+	 __asm__ ("sthbrx %1,%y0" : "=Z" (*ptrp) : "r" (SRC)); \
+}
+#elif defined(__PPC__) || defined(__POWERPC__)
 #define LOAD_32LE(DEST, ADDR, ARR) { \
 	size_t _addr = (ADDR); \
 	const void* _ptr = (ARR); \
