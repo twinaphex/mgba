@@ -26,8 +26,8 @@ int ftostr_l(char* restrict str, size_t size, float f, locale_t locale) {
 #endif
 }
 
-#ifndef HAVE_STRTOF_EL
-float strtof_el(const char* restrict str, char** restrict end, locale_t locale) {
+#ifndef HAVE_STRTOF_L
+float strtof_l(const char* restrict str, char** restrict end, locale_t locale) {
 #ifdef HAVE_LOCALE
 	locale_t old = uselocale(locale);
 	float res = strtof(str, end);
@@ -64,7 +64,7 @@ float strtof_u(const char* restrict str, char** restrict end) {
 #else
 	locale_t l = "C";
 #endif
-	float res = strtof_el(str, end, l);
+	float res = strtof_l(str, end, l);
 #if HAVE_LOCALE
 	freelocale(l);
 #endif
