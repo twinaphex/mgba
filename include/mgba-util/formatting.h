@@ -20,8 +20,8 @@ typedef const char* locale_t;
 
 int ftostr_l(char* restrict str, size_t size, float f, locale_t locale);
 
-#ifndef HAVE_STRTOF_L
-float strtof_l(const char* restrict str, char** restrict end, locale_t locale);
+#ifndef HAVE_STRTOF_EL
+float strtof_el(const char* restrict str, char** restrict end, locale_t locale);
 #endif
 
 int ftostr_u(char* restrict str, size_t size, float f);
