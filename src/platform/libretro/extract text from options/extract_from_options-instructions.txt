@@ -1,0 +1,230 @@
+** Instructions **
+
+* Preparations *
+
+From libretro_core_options.h copy the entire
+'struct retro_core_option_definition option_defs_us[]' into a new file and
+name it [core_name]_us.txt.
+
+If macros are used to insert code or text into option_defs_us, it is necessary
+to manually replace all used macros in the new file with the corresponding
+code/text snippets. Otherwise they will be ignored by the script.
+
+
+For example:
+   #define CORE_OPTION_NAME "reicast"
+   ...
+   {
+      CORE_OPTION_NAME "_internal_resolution", // => "reicast_internal_resolution",
+      ...
+
+If parts of the array are populated at runtime, it's best to incorporate those parts
+into the new file as well, unless there is absolutely no need to translate them
+(usually only true for purely numerical values and some special terms/abbreviations).
+
+It is recommended to check the strings once before running the script.
+In particular the following should be considered:
+
+ - if the value of a key-value pair is one of the following (regardless of
+   capitalization), it's content should be moved to the key & the value should
+   be set to NULL instead:
+   '"enabled"', '"disabled"', '"true"', '"false"', '"on"', '"off"'
+
+
+   For example:
+   {
+      "option_key",
+      "Description/Label",
+      "Information/Sub-Label",
+      {
+         { "disabled", NULL }, // perfect
+         { "yes",  "enabled" }, // => { "enabled", NULL },
+         { NULL, NULL },
+      },
+      "disabled",
+   }
+
+
+   NOTE: These strings will not be made translatable by this script, as they are
+         translated by RetroArch itself.
+
+
+ - all options which require a restart to take effect should include
+   '(Restart Required)' in their description/label. Any similar note already
+   present should be replaced accordingly. It is not necessary to also
+   mention this requirement in the info text.
+
+
+   For example:
+   {
+      "option_key",
+      "Description (Restart)", // => "Description (Restart Required)",
+      "Information/Sub-Label. Requires a restart.", // 'Requires a restart.' can be omitted/removed.
+      { ...
+
+
+
+* Conversion *
+
+Once the preparation is done, place the created [core_name]_us.txt
+into the same directory the extract_from_options.py script is in.
+Then open the terminal/command line tool and navigate to the same
+directory. You need to have Python 3 installed (and added to your PATH system
+variable on Windows).
+
+Run the script using:
+'python3 ./extract_from_options.py path/to/[name_of_core]_us.txt' or
+'python ./extract_from_options.py path/to/[name_of_core]_us.txt'.
+
+The script will
+1.) create a msg_hash.h file declaring all keys within an enum
+    as well as implementing all functions needed
+2.) create a msg_hash_[input_file_name].h containing the key/string pairs,
+    as well as msg_hash dummy files for all supported languages in a
+    ./intl subdirectory
+3.) create a [input_file_name]_code.txt containing the converted
+    option_defs struct
+
+It is recommended to verify the created files are free of errors.
+In particular:
+
+ - Due to the way the strings are replaced by the msg_hash_to_str functions
+   (once per option), [input_file_name]_code.txt might reveal
+   redundant/duplicate values in the original code. These instances should be
+   carefully inspected.
+
+
+   For example:
+       ...
+     - { "LIGHT_PURPLE_2 16", msg_hash_to_str(MSG_HASH_OPTION_VAL_LIGHT_PURPLE_2, language) },
+     | { "LIGHT_GREEN_2 17",  msg_hash_to_str(MSG_HASH_OPTION_VAL_LIGHT_GREEN_2, language) },
+     | { "LIGHT_GREEN_3 18",  msg_hash_to_str(MSG_HASH_OPTION_VAL_LIGHT_GREEN_3, language) },
+     | { "LIGHT_CYAN_2 19",   msg_hash_to_str(MSG_HASH_OPTION_VAL_LIGHT_CYAN_2, language) },
+     | { "LIGHT_RED_2 20",    msg_hash_to_str(MSG_HASH_OPTION_VAL_LIGHT_RED_2, language) },
+     | { "MAGENTA 21",        msg_hash_to_str(MSG_HASH_OPTION_VAL_MAGENTA, language) },
+     > { "LIGHT_PURPLE_2 22", "Light Purple (2)" }, // Possible duplicate!
+       ...
+
+
+   NOTE: For numerical (integer) values no hash key, and no 'msg_hash_to_str()'
+         function, will be created.
+
+ - Since hash keys are purged of all special characters, the script might create
+   some duplicates, especially for 'almost numerical' values ("10%", "10°", etc.).
+   The easiest way to verify this is to check 'enum msg_hash_enums' in 
+   msg_hash.h for duplicate values (on Linux: copy the contents of
+   msg_hash_enums into a txt file and run 'sort [name of file].txt | uniq -D'
+   in the terminal; no result => no duplicates).
+   Modifications will need to be performed in all created non-empty files.
+
+
+* Code integration *
+
+In libretro.c/.cpp:
+   1.) Add '#include "msg_hash.h"'
+
+   2.) Place the content of the _code.txt file at the beginning of
+       'retro_set_environment(...)', below the variable declarations
+
+      2.1) Insert the 'retro_environment_t' variable into the marked place:
+
+
+#ifndef HAVE_NO_LANGEXTRA
+if (!( ->/* retro_environment_t */<- (RETRO_ENVIRONMENT_GET_LANGUAGE, &language) &&
+    (language < RETRO_LANGUAGE_LAST)))
+   language = 0;
+#endif
+
+
+      2.2) Remove no longer needed 'on runtime insertions'; or make sure they
+           still work as intended
+
+
+In libretro_core_options.h:
+   1.) In 'libretro_set_core_options(...)' replace
+
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version) && (version >= 1))
+   {
+#ifndef HAVE_NO_LANGEXTRA
+      struct retro_core_options_intl core_options_intl;
+      unsigned language = 0;
+
+      core_options_intl.us    = option_defs_us;
+      core_options_intl.local = NULL;
+
+      if (environ_cb(RETRO_ENVIRONMENT_GET_LANGUAGE, &language) &&
+          (language < RETRO_LANGUAGE_LAST) && (language != RETRO_LANGUAGE_ENGLISH))
+         core_options_intl.local = option_defs_intl[language];
+
+      environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL, &core_options_intl);
+#else
+      environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS, &option_defs_us);
+#endif
+   }
+
+
+       with:
+
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version) && (version >= 1))
+   {
+      environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS, &option_defs);
+   }
+
+
+   2.) Replace all instances of 'option_defs_us' with 'option_defs'
+
+   3.) Delete the 'struct retro_core_option_definition *option_defs_intl' struct,
+   as it is no longer needed. libretro_core_options_intl.h can be kept around for
+   possible later re-use of the present translations.
+
+Add the msg_hash.h file & /intl folder created by the script to the directory
+libretro_core_options.h is in.
+
+Locate libretro.h and ensure 'enum retro_language' is up to date.
+As of the time of writing (19.07.2021) it should include:
+
+   RETRO_LANGUAGE_ENGLISH             = 0,
+   RETRO_LANGUAGE_JAPANESE            = 1,
+   RETRO_LANGUAGE_FRENCH              = 2,
+   RETRO_LANGUAGE_SPANISH             = 3,
+   RETRO_LANGUAGE_GERMAN              = 4,
+   RETRO_LANGUAGE_ITALIAN             = 5,
+   RETRO_LANGUAGE_DUTCH               = 6,
+   RETRO_LANGUAGE_PORTUGUESE_BRAZIL   = 7,
+   RETRO_LANGUAGE_PORTUGUESE_PORTUGAL = 8,
+   RETRO_LANGUAGE_RUSSIAN             = 9,
+   RETRO_LANGUAGE_KOREAN              = 10,
+   RETRO_LANGUAGE_CHINESE_TRADITIONAL = 11,
+   RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 12,
+   RETRO_LANGUAGE_ESPERANTO           = 13,
+   RETRO_LANGUAGE_POLISH              = 14,
+   RETRO_LANGUAGE_VIETNAMESE          = 15,
+   RETRO_LANGUAGE_ARABIC              = 16,
+   RETRO_LANGUAGE_GREEK               = 17,
+   RETRO_LANGUAGE_TURKISH             = 18,
+   RETRO_LANGUAGE_SLOVAK              = 19,
+   RETRO_LANGUAGE_PERSIAN             = 20,
+   RETRO_LANGUAGE_HEBREW              = 21,
+   RETRO_LANGUAGE_ASTURIAN            = 22,
+   RETRO_LANGUAGE_FINNISH             = 23,
+
+
+Now compile, add to RetroArch & verify functionality.
+
+
+* Clean up *
+
+If everything worked out, all that's left to do is:
+
+ - Add #if's/#ifdef's to msg_hash.h & ./intl/msg_hash_[input_file_name].h:
+   This is optional, but you might want to use the same #if/#ifdef pre-compiler
+   instructions found in 'struct retro_core_option_definition option_defs[]'
+   to mask the corresponding hashes & strings in the mentioned files.
+   Just make sure that the affected hashes are only used within the #if/#ifdef.
+   Don't mask them otherwise.
+
+ - Clean up the code:
+   Delete no longer needed macros & comments, move still useful comments to 
+   the proper places, etc.

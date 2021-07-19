@@ -41,6 +41,7 @@ FS_Archive sdmcArchive;
 #endif
 
 #include "libretro_core_options.h"
+#include "msg_hash.h"
 
 #define SAMPLES 512
 #define RUMBLE_PWM 35
@@ -1204,23 +1205,263 @@ unsigned retro_api_version(void) {
 
 void retro_set_environment(retro_environment_t env)
 {
-	environCallback = env;
+   size_t   coreOptionSize = 0;
+   unsigned language = 0;
 
-#ifdef M_CORE_GB
-	const struct GBColorPreset* presets;
-	size_t listSize = GBColorPresetList(&presets);
-
-	size_t colorOpt;
-	for (colorOpt = 0; option_defs_us[colorOpt].key; ++colorOpt) {
-		if (strcmp(option_defs_us[colorOpt].key, "mgba_gb_colors") == 0) {
-			break;
-		}
-	}
-	size_t i;
-	for (i = 0; i < listSize && i < RETRO_NUM_CORE_OPTION_VALUES_MAX; ++i) {
-		option_defs_us[colorOpt].values[i].value = presets[i].name;
-	}
+#ifndef HAVE_NO_LANGEXTRA
+   if (!(env(RETRO_ENVIRONMENT_GET_LANGUAGE, &language) &&
+       (language < RETRO_LANGUAGE_LAST)))
+      language = 0;
 #endif
+
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_solar_sensor_level",
+      msg_hash_to_str(MSG_HASH_MGBA_SOLAR_SENSOR_LEVEL_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_SOLAR_SENSOR_LEVEL_INFO, language),
+      {
+         { "sensor",  msg_hash_to_str(MSG_HASH_OPTION_VAL_USE_DEVICE_SENSOR_IF_AVAILABLE, language) },
+         { "0",       NULL },
+         { "1",       NULL },
+         { "2",       NULL },
+         { "3",       NULL },
+         { "4",       NULL },
+         { "5",       NULL },
+         { "6",       NULL },
+         { "7",       NULL },
+         { "8",       NULL },
+         { "9",       NULL },
+         { "10",      NULL },
+         { NULL,      NULL },
+      },
+      "0"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_allow_opposing_directions",
+      msg_hash_to_str(MSG_HASH_MGBA_ALLOW_OPPOSING_DIRECTIONS_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_ALLOW_OPPOSING_DIRECTIONS_INFO, language),
+      {
+         { "disabled",  NULL },
+         { "enabled", NULL },
+         { NULL, NULL },
+      },
+      "no"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_gb_model",
+      msg_hash_to_str(MSG_HASH_MGBA_GB_MODEL_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_GB_MODEL_INFO, language),
+      {
+         { "Autodetect",       msg_hash_to_str(MSG_HASH_OPTION_VAL_AUTODETECT, language) },
+         { "Game Boy",         msg_hash_to_str(MSG_HASH_OPTION_VAL_GAME_BOY, language) },
+         { "Super Game Boy",   msg_hash_to_str(MSG_HASH_OPTION_VAL_SUPER_GAME_BOY, language) },
+         { "Game Boy Color",   msg_hash_to_str(MSG_HASH_OPTION_VAL_GAME_BOY_COLOR, language) },
+         { "Game Boy Advance", msg_hash_to_str(MSG_HASH_OPTION_VAL_GAME_BOY_ADVANCE, language) },
+         { NULL, NULL },
+      },
+      "Autodetect"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_use_bios",
+      msg_hash_to_str(MSG_HASH_MGBA_USE_BIOS_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_USE_BIOS_INFO, language),
+      {
+         { "ON",  NULL },
+         { "OFF", NULL },
+         { NULL, NULL },
+      },
+      "ON"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_skip_bios",
+      msg_hash_to_str(MSG_HASH_MGBA_SKIP_BIOS_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_SKIP_BIOS_INFO, language),
+      {
+         { "OFF", NULL },
+         { "ON",  NULL },
+         { NULL, NULL },
+      },
+      "OFF"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_sgb_borders",
+      msg_hash_to_str(MSG_HASH_MGBA_SGB_BORDERS_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_SGB_BORDERS_INFO, language),
+      {
+         { "ON",  NULL },
+         { "OFF", NULL },
+         { NULL, NULL },
+      },
+      "ON"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_idle_optimization",
+      msg_hash_to_str(MSG_HASH_MGBA_IDLE_OPTIMIZATION_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_IDLE_OPTIMIZATION_INFO, language),
+      {
+         { "Remove Known",      msg_hash_to_str(MSG_HASH_OPTION_VAL_REMOVE_KNOWN, language) },
+         { "Detect and Remove", msg_hash_to_str(MSG_HASH_OPTION_VAL_DETECT_AND_REMOVE, language) },
+         { "Don't Remove",      msg_hash_to_str(MSG_HASH_OPTION_VAL_DONT_REMOVE, language) },
+         { NULL, NULL },
+      },
+      "Remove Known"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_frameskip",
+      msg_hash_to_str(MSG_HASH_MGBA_FRAMESKIP_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_FRAMESKIP_INFO, language),
+      {
+         { "disabled",       NULL },
+         { "auto",           msg_hash_to_str(MSG_HASH_OPTION_VAL_AUTO, language) },
+         { "auto_threshold", msg_hash_to_str(MSG_HASH_OPTION_VAL_AUTO_THRESHOLD, language) },
+         { "fixed_interval", msg_hash_to_str(MSG_HASH_OPTION_VAL_FIXED_INTERVAL, language) },
+         { NULL, NULL },
+      },
+      "disabled"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_frameskip_threshold",
+      msg_hash_to_str(MSG_HASH_MGBA_FRAMESKIP_THRESHOLD_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_FRAMESKIP_THRESHOLD_INFO, language),
+      {
+         { "15", NULL },
+         { "18", NULL },
+         { "21", NULL },
+         { "24", NULL },
+         { "27", NULL },
+         { "30", NULL },
+         { "33", NULL },
+         { "36", NULL },
+         { "39", NULL },
+         { "42", NULL },
+         { "45", NULL },
+         { "48", NULL },
+         { "51", NULL },
+         { "54", NULL },
+         { "57", NULL },
+         { "60", NULL },
+         { NULL, NULL },
+      },
+      "33"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_frameskip_interval",
+      msg_hash_to_str(MSG_HASH_MGBA_FRAMESKIP_INTERVAL_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_FRAMESKIP_INTERVAL_INFO, language),
+      {
+         { "0",  NULL },
+         { "1",  NULL },
+         { "2",  NULL },
+         { "3",  NULL },
+         { "4",  NULL },
+         { "5",  NULL },
+         { "6",  NULL },
+         { "7",  NULL },
+         { "8",  NULL },
+         { "9",  NULL },
+         { "10", NULL },
+         { NULL, NULL },
+      },
+      "0"
+   };
+#if defined(COLOR_16_BIT) && defined(COLOR_5_6_5)
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_color_correction",
+      msg_hash_to_str(MSG_HASH_MGBA_COLOR_CORRECTION_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_COLOR_CORRECTION_INFO, language),
+      {
+         { "OFF",  NULL },
+         { "GBA",  msg_hash_to_str(MSG_HASH_OPTION_VAL_GAME_BOY_ADVANCE, language) },
+         { "GBC",  msg_hash_to_str(MSG_HASH_OPTION_VAL_GAME_BOY_COLOR, language) },
+         { "Auto", msg_hash_to_str(MSG_HASH_OPTION_VAL_AUTO, language) },
+         { NULL, NULL },
+      },
+      "OFF"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_interframe_blending",
+      msg_hash_to_str(MSG_HASH_MGBA_INTERFRAME_BLENDING_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_INTERFRAME_BLENDING_INFO, language),
+      {
+         { "OFF",               NULL },
+         { "mix",               msg_hash_to_str(MSG_HASH_OPTION_VAL_SIMPLE, language) },
+         { "mix_smart",         msg_hash_to_str(MSG_HASH_OPTION_VAL_SMART, language) },
+         { "lcd_ghosting",      msg_hash_to_str(MSG_HASH_OPTION_VAL_LCD_GHOSTING_ACCURATE, language) },
+         { "lcd_ghosting_fast", msg_hash_to_str(MSG_HASH_OPTION_VAL_LCD_GHOSTING_FAST, language) },
+         { NULL, NULL },
+      },
+      "OFF"
+   };
+#endif
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_force_gbp",
+      msg_hash_to_str(MSG_HASH_MGBA_FORCE_GBP_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_FORCE_GBP_INFO, language),
+      {
+         { "OFF", NULL },
+         { "ON",  NULL },
+         { NULL, NULL },
+      },
+      "OFF"
+   };
+   option_defs[coreOptionSize++] = (struct retro_core_option_definition) {
+      "mgba_gb_colors",
+      msg_hash_to_str(MSG_HASH_MGBA_GB_COLORS_DESC, language),
+      msg_hash_to_str(MSG_HASH_MGBA_GB_COLORS_INFO, language),
+      {
+         { "Grayscale", msg_hash_to_str(MSG_HASH_OPTION_VAL_GRAYSCALE, language) },
+	      { "DMG Green", msg_hash_to_str(MSG_HASH_OPTION_VAL_DMG_GREEN, language) },
+	      { "GB Pocket", msg_hash_to_str(MSG_HASH_OPTION_VAL_GB_POCKET, language) },
+	      { "GB Light", msg_hash_to_str(MSG_HASH_OPTION_VAL_GB_LIGHT, language) },
+	      { "GBC Brown ↑", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_BROWN, language) },
+	      { "GBC Red ↑A", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_RED_A, language) },
+	      { "GBC Dark Brown ↑B", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_DARK_BROWN_B, language) },
+	      { "GBC Pale Yellow ↓", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_PALE_YELLOW, language) },
+	      { "GBC Orange ↓A", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_ORANGE_A, language) },
+	      { "GBC Yellow ↓B", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_YELLOW_B, language) },
+	      { "GBC Blue ←", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_BLUE, language) },
+	      { "GBC Dark Blue ←A", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_DARK_BLUE_A, language) },
+	      { "GBC Gray ←B", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_GRAY_B, language) },
+	      { "GBC Green →", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_GREEN, language) },
+	      { "GBC Dark Green →A", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_DARK_GREEN_A, language) },
+	      { "GBC Reverse →B", msg_hash_to_str(MSG_HASH_OPTION_VAL_GBC_REVERSE_B, language) },
+	      { "SGB 1-A", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1A, language) },
+	      { "SGB 1-B", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1B, language) },
+	      { "SGB 1-C", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1C, language) },
+	      { "SGB 1-D", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1D, language) },
+	      { "SGB 1-E", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1E, language) },
+	      { "SGB 1-F", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1F, language) },
+	      { "SGB 1-G", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1G, language) },
+	      { "SGB 1-H", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_1H, language) },
+	      { "SGB 2-A", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2A, language) },
+	      { "SGB 2-B", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2B, language) },
+	      { "SGB 2-C", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2C, language) },
+	      { "SGB 2-D", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2D, language) },
+	      { "SGB 2-E", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2E, language) },
+	      { "SGB 2-F", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2F, language) },
+	      { "SGB 2-G", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2G, language) },
+	      { "SGB 2-H", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_2H, language) },
+	      { "SGB 3-A", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3A, language) },
+	      { "SGB 3-B", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3B, language) },
+	      { "SGB 3-C", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3C, language) },
+	      { "SGB 3-D", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3D, language) },
+	      { "SGB 3-E", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3E, language) },
+	      { "SGB 3-F", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3F, language) },
+	      { "SGB 3-G", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3G, language) },
+	      { "SGB 3-H", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_3H, language) },
+	      { "SGB 4-A", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4A, language) },
+	      { "SGB 4-B", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4B, language) },
+	      { "SGB 4-C", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4C, language) },
+	      { "SGB 4-D", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4D, language) },
+	      { "SGB 4-E", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4E, language) },
+	      { "SGB 4-F", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4F, language) },
+	      { "SGB 4-G", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4G, language) },
+	      { "SGB 4-H", msg_hash_to_str(MSG_HASH_OPTION_VAL_SGB_4H, language) },
+         { NULL, NULL },
+      },
+      "Grayscale"
+   };
+
+	environCallback = env;
 
 	libretro_set_core_options(environCallback);
 }
