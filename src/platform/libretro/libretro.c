@@ -1162,13 +1162,7 @@ static void _reloadSettings(void) {
 	}
 #endif
 
-    _loadFrameskipSettings(&opts);
-//	var.key = "mgba_frameskip";
-//	var.value = 0;
-//	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-//		opts.frameskip = strtol(var.value, NULL, 10);
-//
-//	}
+	_loadFrameskipSettings(&opts);
 
 	var.key = "mgba_idle_optimization";
 	var.value = 0;
@@ -1230,7 +1224,8 @@ void retro_set_environment(retro_environment_t env)
 	}
 #endif
 
-	libretro_set_core_options(environCallback);
+	bool categoriesSupported;
+	libretro_set_core_options(environCallback, &categoriesSupported);
 }
 
 void retro_set_video_refresh(retro_video_refresh_t video) {
@@ -1475,13 +1470,7 @@ void retro_run(void) {
 			core->reloadConfigOption(core, "allowOpposingDirections", NULL);
 		}
 
-    _loadFrameskipSettings(NULL);
-//		var.key = "mgba_frameskip";
-//		var.value = 0;
-//		if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-//			mCoreConfigSetIntValue(&core->config, "frameskip", strtol(var.value, NULL, 10));
-//			core->reloadConfigOption(core, "frameskip", NULL);
-//		}
+		_loadFrameskipSettings(NULL);
 
 #if defined(COLOR_16_BIT) && defined(COLOR_5_6_5)
 		_loadPostProcessingSettings();
@@ -2341,9 +2330,11 @@ void GBARetroLog(struct mLogger* logger, int category, enum mLogLevel level, con
 /* Used only for GB/GBC content */
 static void _postAudioBuffer(struct mAVStream* stream, blip_t* left, blip_t* right) {
 	UNUSED(stream);
-	blip_read_samples(left, audioSampleBuffer, GB_SAMPLES, true);
+	int produced = blip_read_samples(left, audioSampleBuffer, GB_SAMPLES, true);
 	blip_read_samples(right, audioSampleBuffer + 1, GB_SAMPLES, true);
-	audioCallback(audioSampleBuffer, GB_SAMPLES);
+	if (produced > 0) {
+		audioCallback(audioSampleBuffer, (size_t)produced);
+	}
 }
 
 static void _setRumble(struct mRumble* rumble, int enable) {
