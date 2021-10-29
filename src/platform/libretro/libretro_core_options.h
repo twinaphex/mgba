@@ -65,6 +65,11 @@ struct retro_core_option_v2_category option_cats_us[] = {
 #endif
    },
    {
+      "audio",
+      "Audio",
+      "Configure audio filtering."
+   },
+   {
       "input",
       "Input & Auxiliary Devices",
       "Configure gamepad / sensor input and gamepad rumble settings."
@@ -186,6 +191,51 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "OFF"
    },
 #endif
+   {
+      "mgba_audio_low_pass_filter",
+      "Audio Filter",
+      "Low Pass Filter",
+      "Enables a low pass audio filter to reduce the 'harshness' of generated audio.",
+      NULL,
+      "audio",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL },
+      },
+      "disabled"
+   },
+   {
+      "mgba_audio_low_pass_range",
+      "Audio Filter Level",
+      "Filter Level",
+      "Specifies the cut-off frequency of the low pass audio filter. A higher value increases the perceived 'strength' of the filter, since a wider range of the high frequency spectrum is attenuated.",
+      NULL,
+      "audio",
+      {
+         { "5",  "5%" },
+         { "10", "10%" },
+         { "15", "15%" },
+         { "20", "20%" },
+         { "25", "25%" },
+         { "30", "30%" },
+         { "35", "35%" },
+         { "40", "40%" },
+         { "45", "45%" },
+         { "50", "50%" },
+         { "55", "55%" },
+         { "60", "60%" },
+         { "65", "65%" },
+         { "70", "70%" },
+         { "75", "75%" },
+         { "80", "80%" },
+         { "85", "85%" },
+         { "90", "90%" },
+         { "95", "95%" },
+         { NULL, NULL },
+      },
+      "60"
+   },
    {
       "mgba_allow_opposing_directions",
       "Allow Opposing Directional Input",

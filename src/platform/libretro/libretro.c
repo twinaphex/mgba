@@ -128,6 +128,10 @@ static bool envVarsUpdated;
 static int32_t tiltX = 0;
 static int32_t tiltY = 0;
 static int32_t gyroZ = 0;
+static bool audioLowPassEnabled = false;
+static int32_t audioLowPassRange = 0;
+static int32_t audioLowPassLeftPrev = 0;
+static int32_t audioLowPassRightPrev = 0;
 
 static const int keymap[] = {
 	RETRO_DEVICE_ID_JOYPAD_A,
@@ -254,6 +258,62 @@ static void _loadFrameskipSettings(struct mCoreOptions *opts) {
 	/* (Re)initialise frameskipping, if required */
 	if (opts || (frameskipType != oldFrameskipType)) {
 		_initFrameskip();
+	}
+}
+
+/* Audio post processing */
+static void _audioLowPassFilter(int16_t *buffer, int count) {
+
+	int samples  = count;
+	int16_t *out = buffer;
+
+	/* Restore previous samples */
+	int32_t audioLowPassLeft  = audioLowPassLeftPrev;
+	int32_t audioLowPassRight = audioLowPassRightPrev;
+
+	/* Single-pole low-pass filter (6 dB/octave) */
+	int32_t factorA = audioLowPassRange;
+	int32_t factorB = 0x10000 - factorA;
+
+	do {
+		/* Apply low-pass filter */
+		audioLowPassLeft  = (audioLowPassLeft  * factorA) + (*out       * factorB);
+		audioLowPassRight = (audioLowPassRight * factorA) + (*(out + 1) * factorB);
+
+		/* 16.16 fixed point */
+		audioLowPassLeft  >>= 16;
+		audioLowPassRight >>= 16;
+
+		/* Update sound buffer */
+		*out++ = (int16_t) audioLowPassLeft;
+		*out++ = (int16_t) audioLowPassRight;
+	} while (--samples);
+
+	/* Save last samples for next frame */
+	audioLowPassLeftPrev  = audioLowPassLeft;
+	audioLowPassRightPrev = audioLowPassRight;
+}
+
+static void _loadAudioLowPassFilterSettings(void) {
+
+	struct retro_variable var;
+	audioLowPassEnabled = false;
+	audioLowPassRange = (60 * 0x10000) / 100;
+
+	var.key = "mgba_audio_low_pass_filter";
+	var.value = 0;
+
+	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+		if (strcmp(var.value, "enabled") == 0) {
+			audioLowPassEnabled = true;
+		}
+	}
+
+	var.key = "mgba_audio_low_pass_range";
+	var.value = 0;
+
+	if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+		audioLowPassRange = (strtol(var.value, NULL, 10) * 0x10000) / 100;
 	}
 }
 
@@ -1163,6 +1223,7 @@ static void _reloadSettings(void) {
 #endif
 
 	_loadFrameskipSettings(&opts);
+	_loadAudioLowPassFilterSettings();
 
 	var.key = "mgba_idle_optimization";
 	var.value = 0;
@@ -1416,6 +1477,11 @@ void retro_deinit(void) {
 	luxSensorEnabled = false;
 	sensorsInitDone = false;
 	useBitmasks = false;
+
+	audioLowPassEnabled = false;
+	audioLowPassRange = 0;
+	audioLowPassLeftPrev = 0;
+	audioLowPassRightPrev = 0;
 }
 
 static int turboclock = 0;
@@ -1471,6 +1537,7 @@ void retro_run(void) {
 		}
 
 		_loadFrameskipSettings(NULL);
+		_loadAudioLowPassFilterSettings();
 
 #if defined(COLOR_16_BIT) && defined(COLOR_5_6_5)
 		_loadPostProcessingSettings();
@@ -1642,6 +1709,9 @@ void retro_run(void) {
 			int produced = blip_read_samples(audioChannelLeft, audioSampleBuffer, samplesToRead, true);
 			blip_read_samples(audioChannelRight, audioSampleBuffer + 1, samplesToRead, true);
 			if (produced > 0) {
+				if (audioLowPassEnabled) {
+					_audioLowPassFilter(audioSampleBuffer, produced);
+				}
 				audioCallback(audioSampleBuffer, (size_t)produced);
 			}
 		}
@@ -2333,6 +2403,9 @@ static void _postAudioBuffer(struct mAVStream* stream, blip_t* left, blip_t* rig
 	int produced = blip_read_samples(left, audioSampleBuffer, GB_SAMPLES, true);
 	blip_read_samples(right, audioSampleBuffer + 1, GB_SAMPLES, true);
 	if (produced > 0) {
+		if (audioLowPassEnabled) {
+			_audioLowPassFilter(audioSampleBuffer, produced);
+		}
 		audioCallback(audioSampleBuffer, (size_t)produced);
 	}
 }
