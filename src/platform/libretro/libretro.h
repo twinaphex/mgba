@@ -291,6 +291,7 @@ enum retro_language
    RETRO_LANGUAGE_CATALAN             = 29,
    RETRO_LANGUAGE_BRITISH_ENGLISH     = 30,
    RETRO_LANGUAGE_HUNGARIAN           = 31,
+   RETRO_LANGUAGE_ROMANIAN            = 50,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -1767,6 +1768,14 @@ enum retro_mod
                                             * (see enum retro_savestate_context)
                                             */
 
+
+
+
+#define RETRO_ENVIRONMENT_SET_SAVE_UPDATED_CALLBACK (880 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_save_updated_callback * --
+                                            * Lets the frontend know when the core has updated the save.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2618,6 +2627,14 @@ struct retro_rumble_interface
 {
    retro_set_rumble_state_t set_rumble_state;
 };
+
+/* Notifies libretro that the save has been updated. */
+typedef void (RETRO_CALLCONV *retro_save_updated_callback_t)(void *context);
+
+struct retro_save_updated_callback {
+  retro_save_updated_callback_t callback;
+};
+
 
 /* Notifies libretro that audio data should be written. */
 typedef void (RETRO_CALLCONV *retro_audio_callback_t)(void);
