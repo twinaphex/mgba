@@ -13549,8 +13549,8 @@ struct retro_core_options_v2 options_pt_pt = {
 #define MGBA_FRAMESKIP_THRESHOLD_INFO_0_RO "Când 'Frameskip' este setat la 'Auto (Threshold)', specifică pragul de ocupare a bufferului audio (procentual) sub care vor fi sărite cadrele. Valorile mai mari reduc riscul de pocnituri, făcând ca cadrele să fie abandonate mai frecvent."
 #define MGBA_FRAMESKIP_INTERVAL_LABEL_RO "Intervalul de frameskip"
 #define MGBA_FRAMESKIP_INTERVAL_INFO_0_RO "Atunci când 'Frameskip' este setat la 'Fixed Interval', valoarea setată aici reprezintă numărul de cadre omise după ce un cadru este redat - de exemplu, '0' = 60 fps, '1' = 30 fps, '2' = 15 fps samd."
-#define OPTION_VAL_DISABLED "Dezactivat"
-#define OPTION_VAL_ENABLED "Activat"
+#define OPTION_VAL_DISABLED_RO "Dezactivat"
+#define OPTION_VAL_ENABLED_RO "Activat"
 
 struct retro_core_option_v2_category option_cats_ro[] = {
    {
@@ -13610,8 +13610,8 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "system",
       {
-         { "ON",  OPTION_VAL_ENABLED },
-         { "OFF", OPTION_VAL_DISABLED },
+         { "ON",  OPTION_VAL_ENABLED_RO },
+         { "OFF", OPTION_VAL_DISABLED_RO },
          { NULL, NULL },
       },
       "ON"
@@ -13624,8 +13624,8 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "system",
       {
-         { "OFF", OPTION_VAL_DISABLED },
-         { "ON",  OPTION_VAL_ENABLED },
+         { "OFF", OPTION_VAL_DISABLED_RO },
+         { "ON",  OPTION_VAL_ENABLED_RO },
          { NULL, NULL },
       },
       "OFF"
@@ -13668,8 +13668,8 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "video",
       {
-         { "ON",  OPTION_VAL_ENABLED },
-         { "OFF", OPTION_VAL_DISABLED },
+         { "ON",  OPTION_VAL_ENABLED_RO },
+         { "OFF", OPTION_VAL_DISABLED_RO },
          { NULL, NULL },
       },
       "ON"
@@ -13683,7 +13683,7 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "video",
       {
-         { "OFF",  OPTION_VAL_DISABLED },
+         { "OFF",  OPTION_VAL_DISABLED_RO },
          { "GBA",  OPTION_VAL_GAME_BOY_ADVANCE_RO },
          { "GBC",  OPTION_VAL_GAME_BOY_COLOR_RO },
          { "Auto", OPTION_VAL_AUTO_RO },
@@ -13699,7 +13699,7 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "video",
       {
-         { "OFF",               OPTION_VAL_DISABLED },
+         { "OFF",               OPTION_VAL_DISABLED_RO },
          { "mix",               OPTION_VAL_MIX_RO },
          { "mix_smart",         OPTION_VAL_MIX_SMART_RO },
          { "lcd_ghosting",      OPTION_VAL_LCD_GHOSTING_RO },
@@ -13717,11 +13717,11 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "audio",
       {
-         { OPTION_VAL_DISABLED, NULL },
-         { OPTION_VAL_ENABLED,  NULL },
+         { OPTION_VAL_DISABLED_RO, NULL },
+         { OPTION_VAL_ENABLED_RO,  NULL },
          { NULL, NULL },
       },
-      OPTION_VAL_DISABLED
+      OPTION_VAL_DISABLED_RO
    },
    {
       "mgba_audio_low_pass_range",
@@ -13762,8 +13762,8 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "input",
       {
-         { "no",  OPTION_VAL_DISABLED },
-         { "yes", OPTION_VAL_ENABLED },
+         { "no",  OPTION_VAL_DISABLED_RO },
+         { "yes", OPTION_VAL_ENABLED_RO },
          { NULL, NULL },
       },
       "no"
@@ -13800,8 +13800,8 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "input",
       {
-         { "OFF", OPTION_VAL_DISABLED },
-         { "ON",  OPTION_VAL_ENABLED },
+         { "OFF", OPTION_VAL_DISABLED_RO },
+         { "ON",  OPTION_VAL_ENABLED_RO },
          { NULL, NULL },
       },
       "OFF"
@@ -13829,7 +13829,7 @@ struct retro_core_option_v2_definition option_defs_ro[] = {
       NULL,
       "performance",
       {
-         { "disabled",       OPTION_VAL_DISABLED},
+         { "disabled",       OPTION_VAL_DISABLED_RO},
          { "auto",           OPTION_VAL_AUTO_RO },
          { "auto_threshold", OPTION_VAL_AUTO_THRESHOLD_RO },
          { "fixed_interval", OPTION_VAL_FIXED_INTERVAL_RO },
