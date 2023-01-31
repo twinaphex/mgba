@@ -5322,6 +5322,8 @@ struct retro_core_options_v2 options_eo = {
 #define MGBA_FRAMESKIP_THRESHOLD_INFO_0_ES "Cuando la omisión de fotogramas esté configurada como «Selección automática (umbral)», este ajuste especifica el umbral de ocupación del búfer de audio (en porcentaje) por el que se omitirán fotogramas si el valor es inferior. Un valor más elevado reduce el riesgo de chasquidos omitiendo fotogramas con una mayor frecuencia."
 #define MGBA_FRAMESKIP_INTERVAL_LABEL_ES "Intervalo de omisión de fotogramas"
 #define MGBA_FRAMESKIP_INTERVAL_INFO_0_ES "Cuando la omisión de fotogramas esté configurada como «Intervalos fijos», el valor que se asigne aquí será el número de fotogramas omitidos una vez se haya renderizado un fotograma. Por ejemplo: «0» = 60 FPS, «1» = 30 FPS, «2» = 15 FPS, etcétera."
+#define OPTION_VAL_DISABLED_ES "Desactivado"
+#define OPTION_VAL_ENABLED_ES "Activado"
 
 struct retro_core_option_v2_category option_cats_es[] = {
    {
@@ -5381,8 +5383,8 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "system",
       {
-         { "ON",  "enabled" },
-         { "OFF", "disabled" },
+         { "ON",  OPTION_VAL_ENABLED_ES },
+         { "OFF", OPTION_VAL_DISABLED_ES },
          { NULL, NULL },
       },
       "ON"
@@ -5395,8 +5397,8 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "system",
       {
-         { "OFF", "disabled" },
-         { "ON",  "enabled" },
+         { "OFF", OPTION_VAL_DISABLED_ES },
+         { "ON",  OPTION_VAL_ENABLED_ES },
          { NULL, NULL },
       },
       "OFF"
@@ -5439,8 +5441,8 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "video",
       {
-         { "ON",  "enabled" },
-         { "OFF", "disabled" },
+         { "ON",  OPTION_VAL_ENABLED_ES },
+         { "OFF", OPTION_VAL_DISABLED_ES },
          { NULL, NULL },
       },
       "ON"
@@ -5454,7 +5456,7 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "video",
       {
-         { "OFF",  "disabled" },
+         { "OFF",  OPTION_VAL_DISABLED_ES },
          { "GBA",  OPTION_VAL_GAME_BOY_ADVANCE_ES },
          { "GBC",  OPTION_VAL_GAME_BOY_COLOR_ES },
          { "Auto", OPTION_VAL_AUTO_ES },
@@ -5470,7 +5472,7 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "video",
       {
-         { "OFF",               "disabled" },
+         { "OFF",               OPTION_VAL_DISABLED_ES },
          { "mix",               OPTION_VAL_MIX_ES },
          { "mix_smart",         OPTION_VAL_MIX_SMART_ES },
          { "lcd_ghosting",      OPTION_VAL_LCD_GHOSTING_ES },
@@ -5488,11 +5490,11 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "audio",
       {
-         { "disabled", NULL },
-         { "enabled",  NULL },
+         { OPTION_VAL_DISABLED_ES, NULL },
+         { OPTION_VAL_ENABLED_ES,  NULL },
          { NULL, NULL },
       },
-      "disabled"
+      OPTION_VAL_DISABLED_ES
    },
    {
       "mgba_audio_low_pass_range",
@@ -5533,8 +5535,8 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "input",
       {
-         { "no",  "disabled" },
-         { "yes", "enabled" },
+         { "no",  OPTION_VAL_DISABLED_ES },
+         { "yes", OPTION_VAL_ENABLED_ES },
          { NULL, NULL },
       },
       "no"
@@ -5571,8 +5573,8 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "input",
       {
-         { "OFF", "disabled" },
-         { "ON",  "enabled" },
+         { "OFF", OPTION_VAL_DISABLED_ES },
+         { "ON",  OPTION_VAL_ENABLED_ES },
          { NULL, NULL },
       },
       "OFF"
@@ -5600,13 +5602,13 @@ struct retro_core_option_v2_definition option_defs_es[] = {
       NULL,
       "performance",
       {
-         { "disabled",       NULL },
+         { OPTION_VAL_DISABLED_ES,       NULL },
          { "auto",           OPTION_VAL_AUTO_ES },
          { "auto_threshold", OPTION_VAL_AUTO_THRESHOLD_ES },
          { "fixed_interval", OPTION_VAL_FIXED_INTERVAL_ES },
          { NULL, NULL },
       },
-      "disabled"
+      OPTION_VAL_DISABLED_ES
    },
    {
       "mgba_frameskip_threshold",
