@@ -9569,52 +9569,52 @@ struct retro_core_options_v2 options_it = {
 
 #define CATEGORY_SYSTEM_LABEL_JA "システム"
 #define CATEGORY_SYSTEM_INFO_0_JA "ベースハードウェアの選択 / BIOSパラメータの設定。"
-#define CATEGORY_VIDEO_LABEL_JA "ビデオのドライバ"
-#define CATEGORY_VIDEO_INFO_0_JA "DMGパレット / SGBボーダー / カラーコレクション / 液晶残像効果を設定する。"
-#define CATEGORY_VIDEO_INFO_1_JA "DMGパレット / SGBボーダーを設定する。"
-#define CATEGORY_AUDIO_LABEL_JA "オーディオのドライバ"
-#define CATEGORY_AUDIO_INFO_0_JA "オーディオのフィルタリングを設定する。"
+#define CATEGORY_VIDEO_LABEL_JA "ビデオ設定"
+#define CATEGORY_VIDEO_INFO_0_JA "DMGパレット / SGBボーダー / カラー補正 / 液晶残像効果を設定します。"
+#define CATEGORY_VIDEO_INFO_1_JA "DMGパレット / SGBボーダーを設定します。"
+#define CATEGORY_AUDIO_LABEL_JA "オーディオ設定"
+#define CATEGORY_AUDIO_INFO_0_JA "オーディオのフィルタリングを設定します。"
 #define CATEGORY_INPUT_LABEL_JA "入力・補助デバイス"
-#define CATEGORY_INPUT_INFO_0_JA "コントローラー / センサー入力とコントローラー振動の設定をする。"
+#define CATEGORY_INPUT_INFO_0_JA "コントローラー / センサー入力とコントローラー振動を設定します。"
 #define CATEGORY_PERFORMANCE_LABEL_JA "パフォーマンス"
-#define CATEGORY_PERFORMANCE_INFO_0_JA "アイドルループ除去 / フレームスキップのパラメータを設定する。"
+#define CATEGORY_PERFORMANCE_INFO_0_JA "アイドルループ除去 / フレームスキップのパラメータを設定します。"
 #define MGBA_GB_MODEL_LABEL_JA "ゲームボーイモデル (再起動)"
-#define MGBA_GB_MODEL_INFO_0_JA "特定のゲームボーイモデルで読み込まれたコンテンツを実行します。「自動検出」は現在のゲームに最も適したモデルを選択します。"
+#define MGBA_GB_MODEL_INFO_0_JA "特定のゲームボーイモデルでコンテンツを実行します。「自動検出」は現在のゲームに最も適したモデルを選択します。"
 #define OPTION_VAL_AUTODETECT_JA "自動検出"
 #define OPTION_VAL_GAME_BOY_JA "ゲームボーイ"
 #define OPTION_VAL_SUPER_GAME_BOY_JA "スーパーゲームボーイ"
 #define OPTION_VAL_GAME_BOY_COLOR_JA "ゲームボーイカラー"
 #define OPTION_VAL_GAME_BOY_ADVANCE_JA "ゲームボーイアドバンス"
-#define MGBA_USE_BIOS_LABEL_JA "BIOS ファイルが見つかった場合使用する (再起動)"
-#define MGBA_USE_BIOS_INFO_0_JA "RetroArch のシステムディレクトリにある場合、エミュレートされたハードウェアの公式 BIOS / ブートローダを使用します。"
-#define MGBA_SKIP_BIOS_LABEL_JA "BIOS イントロをスキップ (再起動)"
-#define MGBA_SKIP_BIOS_INFO_0_JA "公式の BIOS / ブートローダーを使用する場合は、起動ロゴのアニメーションをスキップします。「 BIOS ファイルが見つかった場合使用する」が無効の場合はこの設定は無視されます。"
+#define MGBA_USE_BIOS_LABEL_JA "BIOSファイルが見つかった場合使用する (再起動)"
+#define MGBA_USE_BIOS_INFO_0_JA "RetroArchのシステムディレクトリにある場合、エミュレートされたハードウェアの公式BIOS / ブートローダーを使用します。"
+#define MGBA_SKIP_BIOS_LABEL_JA "BIOSイントロをスキップ (再起動)"
+#define MGBA_SKIP_BIOS_INFO_0_JA "公式のBIOS / ブートローダーを使用する場合、起動ロゴのアニメーションをスキップします。「BIOSファイルが見つかった場合使用する」が無効の場合、この設定は無視されます。"
 #define MGBA_GB_COLORS_LABEL_JA "デフォルトのゲームボーイパレット"
-#define MGBA_GB_COLORS_INFO_0_JA NULL
+#define MGBA_GB_COLORS_INFO_0_JA "ゲームボーイカラーやスーパーゲームボーイに対応していないゲームボーイのゲーム、またはモデルがゲームボーイに強制されている場合に使用するパレットを選択します。"
 #define OPTION_VAL_GRAYSCALE_JA "グレースケール"
 #define MGBA_GB_COLORS_PRESET_LABEL_JA "ハードウェアプリセットのゲームボーイパレット (再起動)"
-#define MGBA_GB_COLORS_PRESET_INFO_0_JA NULL
+#define MGBA_GB_COLORS_PRESET_INFO_0_JA "ゲームボーイカラーやスーパーゲームボーイでプリセットがあるゲームボーイのゲームに対してパレットを使用します。"
 #define OPTION_VAL_0_JA "デフォルトのゲームボーイプリセット"
 #define OPTION_VAL_1_JA "ゲームボーイカラープリセットのみ"
 #define OPTION_VAL_2_JA "スーパーゲームボーイのプリセットのみ"
 #define OPTION_VAL_3_JA "利用可能なプリセット"
 #define MGBA_SGB_BORDERS_LABEL_JA "スーパーゲームボーイのピクチャーフレームを使用 (再起動)"
-#define MGBA_SGB_BORDERS_INFO_0_JA "スーパーゲームボーイで強化されたゲームを実行するときにスーパーゲームボーイのピクチャーフレームを表示します。"
-#define MGBA_COLOR_CORRECTION_LABEL_JA "カラーコレクション"
-#define MGBA_COLOR_CORRECTION_INFO_0_JA "実際の GBA / GBC ハードウェアの表示に合わせて出力色を調整します。"
+#define MGBA_SGB_BORDERS_INFO_0_JA "スーパーゲームボーイで強化されたゲームを実行するとき、スーパーゲームボーイのピクチャーフレームを表示します。"
+#define MGBA_COLOR_CORRECTION_LABEL_JA "カラー補正"
+#define MGBA_COLOR_CORRECTION_INFO_0_JA "実際のGBA / GBCハードウェアの表示に合わせて出力色を調整します。"
 #define OPTION_VAL_AUTO_JA "自動"
-#define MGBA_INTERFRAME_BLENDING_LABEL_JA NULL
-#define MGBA_INTERFRAME_BLENDING_INFO_0_JA NULL
+#define MGBA_INTERFRAME_BLENDING_LABEL_JA "インターフレームブレンディング"
+#define MGBA_INTERFRAME_BLENDING_INFO_0_JA "LCDゴースティング効果をシミュレートします。「シンプル」は現在のフレームと前のフレームを50:50でミックスします。「スマート」は画面のちらつきを検出し、影響を受けたピクセルのみを50:50でミックスします。「LCDゴースティング」は複数のバッファされたフレームを組み合わせて自然なLCDの応答時間を模倣します。「シンプル」または「スマート」ブレンディングは、透過効果を利用するゲームをプレイする際に必要です。"
 #define OPTION_VAL_MIX_JA "シンプル"
 #define OPTION_VAL_MIX_SMART_JA "スマート"
 #define OPTION_VAL_LCD_GHOSTING_JA "液晶残像 (精密)"
 #define OPTION_VAL_LCD_GHOSTING_FAST_JA "液晶残像 (高速)"
 #define MGBA_AUDIO_LOW_PASS_FILTER_LABEL_JA "オーディオフィルタ"
 #define MGBA_AUDIO_LOW_PASS_FILTER_LABEL_CAT_JA "ローパスフィルタ"
-#define MGBA_AUDIO_LOW_PASS_FILTER_INFO_0_JA NULL
+#define MGBA_AUDIO_LOW_PASS_FILTER_INFO_0_JA "生成されたオーディオの「耳障り」を軽減するためにローパスオーディオフィルターを有効にします。"
 #define MGBA_AUDIO_LOW_PASS_RANGE_LABEL_JA "オーディオフィルタレベル"
 #define MGBA_AUDIO_LOW_PASS_RANGE_LABEL_CAT_JA "フィルタレベル"
-#define MGBA_AUDIO_LOW_PASS_RANGE_INFO_0_JA "ローパスオーディオフィルターのカットオフ周波数を指定します。 値を大きくすると、高周波数スペクトルの広い範囲が減衰するため、フィルタの知覚された「強さ」が増加します。"
+#define MGBA_AUDIO_LOW_PASS_RANGE_INFO_0_JA "ローパスオーディオフィルターのカットオフ周波数を指定します。値を大きくすると、高周波数スペクトルの広い範囲が減衰するため、フィルタの知覚された「強さ」が増加します。"
 #define OPTION_VAL_5_JA NULL
 #define OPTION_VAL_10_JA NULL
 #define OPTION_VAL_15_JA NULL
@@ -9635,25 +9635,27 @@ struct retro_core_options_v2 options_it = {
 #define OPTION_VAL_90_JA NULL
 #define OPTION_VAL_95_JA NULL
 #define MGBA_ALLOW_OPPOSING_DIRECTIONS_LABEL_JA "対向方向入力を許可する"
-#define MGBA_ALLOW_OPPOSING_DIRECTIONS_INFO_0_JA "有効にすると、左右 (または上下) 方向の同時押し / 高速交互押し / 長押しが可能になります。動作に不具合が生じる場合があります。"
+#define MGBA_ALLOW_OPPOSING_DIRECTIONS_INFO_0_JA "有効にすると、左右（または上下）方向の同時押し、高速交互押し、長押しが可能になります。不具合が生じる場合があります。"
 #define MGBA_SOLAR_SENSOR_LEVEL_LABEL_JA "太陽センサーレベル"
-#define MGBA_SOLAR_SENSOR_LEVEL_INFO_0_JA NULL
+#define MGBA_SOLAR_SENSOR_LEVEL_INFO_0_JA "周囲の日光の強度を設定します。たとえば、『ボクタイ』シリーズのようなカートリッジに太陽センサーが含まれているゲームで使用できます。"
 #define OPTION_VAL_SENSOR_JA "利用可能な場合は端末センサーを使用する"
 #define MGBA_FORCE_GBP_LABEL_JA "ゲームボーイプレーヤー振動 (再起動)"
-#define MGBA_FORCE_GBP_INFO_0_JA "この機能を有効にすると、ゲームボーイプレーヤーの起動ロゴがある対応ゲームで、コントローラーが振動するようになります。この機能は、任天堂の判断により、一部のゲームでちらつきやラグなどの不具合が発生する場合があります。"
+#define MGBA_FORCE_GBP_INFO_0_JA "この機能を有効にすると、ゲームボーイプレーヤーの起動ロゴがある対応ゲームで、コントローラーが振動します。一部のゲームではちらつきやラグが発生する場合があります。"
 #define MGBA_IDLE_OPTIMIZATION_LABEL_JA "アイドルループの削除"
-#define MGBA_IDLE_OPTIMIZATION_INFO_0_JA NULL
-#define OPTION_VAL_REMOVE_KNOWN_JA NULL
+#define MGBA_IDLE_OPTIMIZATION_INFO_0_JA "「アイドルループ」とは、コード内で何も起こらないが、CPUが全速力で動作するセクションです。これを最適化することでシステム負荷を軽減します。低スペックのハードウェアでは有効にすることをお勧めします。"
+#define OPTION_VAL_REMOVE_KNOWN_JA "既知のループを削除"
 #define OPTION_VAL_DETECT_AND_REMOVE_JA "検出と削除"
 #define OPTION_VAL_DON_T_REMOVE_JA "削除しない"
 #define MGBA_FRAMESKIP_LABEL_JA "フレームスキップ"
-#define MGBA_FRAMESKIP_INFO_0_JA NULL
-#define OPTION_VAL_AUTO_THRESHOLD_JA NULL
-#define OPTION_VAL_FIXED_INTERVAL_JA NULL
+#define MGBA_FRAMESKIP_INFO_0_JA "オーディオバッファのアンダーラン（音割れ）を防ぐためにフレームをスキップします。視覚の滑らかさを犠牲にしてパフォーマンスを向上させます。「自動」はフロントエンドの指示に従ってフレームをスキップします。「自動（閾値）」は「フレームスキップ閾値（%）」設定を使用します。「固定間隔」は「フレームスキップ間隔」設定を使用します。"
+#define OPTION_VAL_AUTO_THRESHOLD_JA "自動 (閾値)"
+#define OPTION_VAL_FIXED_INTERVAL_JA "固定間隔"
 #define MGBA_FRAMESKIP_THRESHOLD_LABEL_JA "フレームスキップ閾値 (%)"
-#define MGBA_FRAMESKIP_THRESHOLD_INFO_0_JA NULL
-#define MGBA_FRAMESKIP_INTERVAL_LABEL_JA NULL
-#define MGBA_FRAMESKIP_INTERVAL_INFO_0_JA NULL
+#define MGBA_FRAMESKIP_THRESHOLD_INFO_0_JA "「フレームスキップ」が「自動（閾値）」に設定されている場合、フレームをスキップするオーディオバッファ占有率の閾値（パーセンテージ）を指定します。値が高いほど、フレームがより頻繁にスキップされ、音割れのリスクが低減します。"
+#define MGBA_FRAMESKIP_INTERVAL_LABEL_JA "フレームスキップ間隔"
+#define MGBA_FRAMESKIP_INTERVAL_INFO_0_JA "「フレームスキップ」が「固定間隔」に設定されている場合、ここで設定された値は、1フレームをレンダリングした後に省略されるフレームの数を示します。例えば、「0」なら60fps、「1」なら30fps、「2」なら15fpsとなります。"
+#define OPTION_VAL_ENABLED_JA "有効化"
+#define OPTION_VAL_DISABLED_JA "無効化"
 
 struct retro_core_option_v2_category option_cats_ja[] = {
    {
@@ -9713,8 +9715,8 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "system",
       {
-         { "ON",  "enabled" },
-         { "OFF", "disabled" },
+         { "ON",  OPTION_VAL_ENABLED_JA },
+         { "OFF", OPTION_VAL_DISABLED_JA },
          { NULL, NULL },
       },
       "ON"
@@ -9727,8 +9729,8 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "system",
       {
-         { "OFF", "disabled" },
-         { "ON",  "enabled" },
+         { "OFF", OPTION_VAL_DISABLED_JA },
+         { "ON",  OPTION_VAL_ENABLED_JA },
          { NULL, NULL },
       },
       "OFF"
@@ -9771,8 +9773,8 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "video",
       {
-         { "ON",  "enabled" },
-         { "OFF", "disabled" },
+         { "ON",  OPTION_VAL_ENABLED_JA },
+         { "OFF", OPTION_VAL_DISABLED_JA },
          { NULL, NULL },
       },
       "ON"
@@ -9786,7 +9788,7 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "video",
       {
-         { "OFF",  "disabled" },
+         { "OFF",  OPTION_VAL_DISABLED_JA },
          { "GBA",  OPTION_VAL_GAME_BOY_ADVANCE_JA },
          { "GBC",  OPTION_VAL_GAME_BOY_COLOR_JA },
          { "Auto", OPTION_VAL_AUTO_JA },
@@ -9802,7 +9804,7 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "video",
       {
-         { "OFF",               "disabled" },
+         { "OFF",               OPTION_VAL_DISABLED_JA },
          { "mix",               OPTION_VAL_MIX_JA },
          { "mix_smart",         OPTION_VAL_MIX_SMART_JA },
          { "lcd_ghosting",      OPTION_VAL_LCD_GHOSTING_JA },
@@ -9820,11 +9822,11 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "audio",
       {
-         { "disabled", NULL },
-         { "enabled",  NULL },
+         { OPTION_VAL_DISABLED_JA, NULL },
+         { OPTION_VAL_ENABLED_JA,  NULL },
          { NULL, NULL },
       },
-      "disabled"
+      OPTION_VAL_DISABLED_JA
    },
    {
       "mgba_audio_low_pass_range",
@@ -9865,8 +9867,8 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "input",
       {
-         { "no",  "disabled" },
-         { "yes", "enabled" },
+         { "no",  OPTION_VAL_DISABLED_JA },
+         { "yes", OPTION_VAL_ENABLED_JA },
          { NULL, NULL },
       },
       "no"
@@ -9903,8 +9905,8 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "input",
       {
-         { "OFF", "disabled" },
-         { "ON",  "enabled" },
+         { "OFF", OPTION_VAL_DISABLED_JA },
+         { "ON",  OPTION_VAL_ENABLED_JA },
          { NULL, NULL },
       },
       "OFF"
@@ -9932,13 +9934,13 @@ struct retro_core_option_v2_definition option_defs_ja[] = {
       NULL,
       "performance",
       {
-         { "disabled",       NULL },
+         { OPTION_VAL_DISABLED_JA,       NULL },
          { "auto",           OPTION_VAL_AUTO_JA },
          { "auto_threshold", OPTION_VAL_AUTO_THRESHOLD_JA },
          { "fixed_interval", OPTION_VAL_FIXED_INTERVAL_JA },
          { NULL, NULL },
       },
-      "disabled"
+      OPTION_VAL_DISABLED_JA
    },
    {
       "mgba_frameskip_threshold",
